@@ -1,4 +1,3 @@
-script_key="";
 getgenv().Config = {
     Build = {
         Main = "Luck", -- Base on: "Damage", "Luck"
