@@ -71,7 +71,7 @@ getgenv().Config = {
         Enable = true,
         ["Rank"] = "Ascend VIII",
             BossRush = {
-                Enable = true,
+                Enable = false,
                 Build = "Damage",
                 MainTool = "Abyssal Empress",
                 WhiteList_Abilities = {4,5}, --
@@ -79,7 +79,7 @@ getgenv().Config = {
                 Difficulty = "Easy",
             },
             Tower = {
-                Enable = true,
+                Enable = false,
                 Build = "Damage",
                 MainTool = "Abyssal Empress",
                 WhiteList_Abilities = {4,5},
