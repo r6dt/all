@@ -1,0 +1,127 @@
+script_key="";
+getgenv().Config = {
+    Build = {
+        Main = "Luck", -- Base on: "Damage", "Luck"
+        LockRace = "Kitsune", -- Lock to specific race
+    },
+
+    Auto_Passive = {
+        Enable = true, -- Enable/Disable passive reroll
+        Target_Passive = "Fortune Chosen", -- Target Passive On Weapon
+        MainTool = {     -- Tools to use for activating passives
+            "Strongest In History", 
+            "Blessed Maiden", 
+        },
+    },
+
+    Auto_Reroll_Stats = { -- Stats to reroll to SSS - Z
+        ["Damage"] = true,
+        ["Luck"] = true,
+        ["CritDamage"] = true,
+        ["CritChance"] = true,
+        ["Defense"] = true,
+        ["CooldownReduction"] = false,
+        ["DamageReduction"] = false,
+    },
+
+    Specific_Clan = {"Eminence"}, -- Left {} if you want any legendary clan
+
+    Blacklist_Bosses = { -- WARNING DISABLE SOME BOSS YOU WON'T GET ITEM FOR WEAPON/RANK ASCEND
+        ["SaberBoss"] = false,
+        ["GojoBoss"] = false,
+        ["SukunaBoss"] = false,
+        ["JinwooBoss"] = false,
+        ["RagnaBoss"] = false,
+        ["AizenBoss"] = false,
+        ["TrueAizenBoss"] = false,
+        ["QinShiBoss"] = false,
+        ["YujiBoss"] = false,
+        ["AlucardBoss"] = false,
+        ["IchigoBoss"] = false,
+        ["StrongestofTodayBoss"] = false,
+        ["StrongestinHistoryBoss"] = false,
+        ["RimuruBoss"] = false,
+        ["MadokaBoss"] = false,
+        ["GilgameshBoss"] = false,
+        ["BlessedMaidenBoss"] = false,
+        ["SaberAlterBoss"] = false,
+        ["AnosBoss"] = false,
+        ["AtomicBoss"] = false,
+        ["YamatoBoss"] = false,
+        ["StrongestShinobiBoss"] = false,
+    },
+
+    Keep_Summon_Boss = {  -- Keep Summon Bosses since you got all items
+        ["SaberBoss"] = false,
+        ["IchigoBoss"] = true,
+        ["StrongestofTodayBoss"] = true,
+        ["StrongestinHistoryBoss"] = true,
+        ["RimuruBoss"] = true,
+        ["GilgameshBoss"] = true,
+        ["BlessedMaidenBoss"] = false,
+        ["SaberAlterBoss"] = false,
+        ["AtomicBoss"] = false,
+    },
+
+    Multi_Island_Farm = {   -- IDK when no boss teleport to multiple island to farm
+        Enable = true, -- Enable Multi_Island_Farm
+        MainTool = "Strongest In History", -- Tool to use for farming mobs on other islands
+        WhiteList_Abilities = {2}, -- Only use these abilities
+    },
+    End_Farm_Rank = { -- If reached this rank all boss farm is stopped
+        Enable = true,
+        ["Rank"] = "Ascend VIII",
+            BossRush = {
+                Enable = true,
+                Build = "Damage",
+                MainTool = "Abyssal Empress",
+                WhiteList_Abilities = {4,5}, --
+                AutoReplay = false,
+                Difficulty = "Easy",
+            },
+            Tower = {
+                Enable = true,
+                Build = "Damage",
+                MainTool = "Abyssal Empress",
+                WhiteList_Abilities = {4,5},
+                AutoReplay = false,
+            },
+    },
+
+    Log = {
+        Horst = false, -- Log Horst
+        RAM = false, -- Log RAM
+        Custom = {
+            MainWeapon = true,
+            Rank = true,
+            Race = false,
+            Clan = false,
+            DamagePercent = false,
+            LuckPercent = false,
+            Haki = false,
+            Level = false,
+            Currencies = false,
+            Weapon = {
+                ["Dark Blade"] = false,
+                ["Gryphon"] = false,
+                ["Ichigo"] = false,
+                ["Rimuru"] = false,
+                ["Strongest In History"] = false,
+                ["Blessed Maiden"] = false,
+                ["Saber Alter"] = false,
+                ["Strongest Shinobi"] = false,
+                ["Abyssal Empress"] = false,
+            },
+            Items = {
+                "Race Reroll",
+                "Trait Reroll",
+                "Clan Reroll",
+            },
+        }
+    },
+    Require_Private_Server = {
+        Kick = true, -- Auto Kick Player if not in Private Server
+        LeaveServer = true, -- Auto Leave Server and return to home page if not in Private Server
+    }
+}
+loadstring(game:HttpGet("https://api.luarmor.net/files/v4/loaders/5e53e03e462e69f749e2c1d56473860a.lua"))()
