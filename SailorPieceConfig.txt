@@ -89,7 +89,7 @@ getgenv().Config = {
 
     Log = {
         Horst = false, -- Log Horst
-        RAM = false, -- Log RAM
+        RAM = true, -- Log RAM
         Custom = {
             MainWeapon = true,
             Rank = true,
