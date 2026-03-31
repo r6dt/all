@@ -23,7 +23,9 @@ getgenv().Config = {
         ["DamageReduction"] = false,
     },
 
+    Specific_Trait = {"Emperor", "Celestial"}, -- Find Target Trait
     Specific_Clan = {"Eminence"}, -- Left {} if you want any legendary clan
+    Specific_Power = {"Colossus"}, -- Find Target Power
 
     Blacklist_Bosses = { -- WARNING DISABLE SOME BOSS YOU WON'T GET ITEM FOR WEAPON/RANK ASCEND
         ["SaberBoss"] = false,
@@ -48,6 +50,7 @@ getgenv().Config = {
         ["AtomicBoss"] = false,
         ["YamatoBoss"] = false,
         ["StrongestShinobiBoss"] = false,
+        ["MoonSlayerBoss"] = false,
     },
 
     Keep_Summon_Boss = {  -- Keep Summon Bosses since you got all items
@@ -59,6 +62,8 @@ getgenv().Config = {
         ["GilgameshBoss"] = true,
         ["BlessedMaidenBoss"] = false,
         ["SaberAlterBoss"] = false,
+        ["MoonSlayerBoss"] = false,
+        ["AnosBoss"] = false,
         ["AtomicBoss"] = false,
     },
 
@@ -104,12 +109,17 @@ getgenv().Config = {
                 ["Dark Blade"] = false,
                 ["Gryphon"] = false,
                 ["Ichigo"] = false,
+                ["Aizen"] = false,
+                ["Shadow"] = false,
                 ["Rimuru"] = false,
                 ["Strongest In History"] = false,
                 ["Blessed Maiden"] = false,
                 ["Saber Alter"] = false,
                 ["Strongest Shinobi"] = false,
                 ["Abyssal Empress"] = false,
+                ["Moon Slayer"] = false,
+                ["Atomic"] = false,
+                ["True Aizen"] = false,
             },
             Items = {
                 "Race Reroll",
