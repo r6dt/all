@@ -72,6 +72,9 @@ getgenv().Config = {
         MainTool = "Strongest In History", -- Tool to use for farming mobs on other islands
         WhiteList_Abilities = {2}, -- Only use these abilities
     },
+
+    Blacklist_Rank = "Ascend VIII", -- Stop farming rank when reached this rank
+
     End_Farm_Rank = { -- If reached this rank all boss farm is stopped
         Enable = true,
         ["Rank"] = "Ascend VIII",
