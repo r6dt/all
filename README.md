@@ -1,4 +1,10 @@
+#SailorPiece
 ```lua
 script_key="";
 loadstring(game:HttpGet("https://raw.githubusercontent.com/r6dt/all/refs/heads/main/SailorPieceConfig.txt"))()
+```
+#PetSimulator99
+```lua
+script_key="";
+loadstring(game:HttpGet("https://raw.githubusercontent.com/r6dt/all/refs/heads/main/PetSimulator99Config.txt"))()
 ```
