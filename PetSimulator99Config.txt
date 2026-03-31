@@ -1,0 +1,59 @@
+getgenv().GGFX_MODE = 1 --1 = REMOVE_TEXTURES : more stable! but no visuals, 2: see some stuff, 3: see all
+getgenv().GRANK_FIRST = false --if you use this you have to define GREBIRTH_TO and GRANK_TO
+getgenv().GZONE_TO = 1 -- to enter event from W1 put 1, from W2 put 100, from W3 200, from W4 240
+getgenv().GDO_LUCKY_WORLD_EVENT = true
+getgenv().GMAKE_HORSESHOE_GIFTS = true
+getgenv().GLIMIT_HORSESHOE_GIFTS = 99999 -- choose yourself, don't set it lower than your MinAmount in your Horseshoe Gift mailrule!
+getgenv().GDO_BOSSES = {1,2,3}
+getgenv().GHEROIC_BOSSES  = {1,2}
+getgenv().GMYTHIC_BOSSES  = {1}
+getgenv().GSKIP_RAID_EGG = true
+getgenv().GMINUTE_HATCH_RAID_EGG = true
+getgenv().GAUTO_UPGRADE_PETS = true
+getgenv().GDISABLE_MINUTE_HATCH = false
+getgenv().GEVENT_FPS  = 10
+getgenv().GUSE_BOOSTS = true
+getgenv().GRAID_TIMEOUT_MINUTES = 60
+getgenv().GRAID_MAX_BREAKABLE_HEALTH = "999qt"
+getgenv().GAUTO_RAID = true
+getgenv().GHATCH_LOBBY = true
+getgenv().GUSE_LEPRECHAUN_KEYS = false
+getgenv().GMAX_RAID_LEVEL = 50000
+getgenv().GMIN_MULTIPLIER = 350 -- min required multiplier of raid egg to hatch
+getgenv().GRAID_MAX_HATCH_MINUTES = 5 -- abort hatching after 5 min
+getgenv().GRESET_UPGRADES = true -- only do true when you actually need a reset
+getgenv().GEVENT_UPGRADES = {
+    { Id = "LuckyRaidDamage", MaxTier = 100 },
+    { Id = "LuckyRaidAttackSpeed", MaxTier = 100 },
+    { Id = "LuckyRaidPets", MaxTier = 100 },
+    { Id = "LuckyRaidEggCost", MaxTier = 100 },
+    { Id = "LuckyRaidMoreCurrency", MaxTier = 2 },
+    { Id = "LuckyRaidBetterLoot", MaxTier = 100 },
+    { Id = "LuckyRaidTitanicChest", MaxTier = 100 },
+    { Id = "LuckyRaidHugeChest", MaxTier = 5 },
+    { Id = "LuckyRaidXP", MaxTier = 100 },
+    { Id = "LuckyRaidPetSpeed", MaxTier = 0 },
+    { Id = "LuckyRaidKeyDrops", MaxTier = 0 },
+    { Id = "LuckyRaidBossHugeChances", MaxTier = 0 },
+    { Id = "LuckyRaidBossTitanicChances", MaxTier = 100 },
+}
+getgenv().GLOOTBOXES = {"Locked Hype Egg","Horseshoe Gift"}
+getgenv().GHOP_ON_STAFF = true
+getgenv().GCLEAR_FAVORITE_PETS = true
+--getgenv().GENCHANTS = {"Strong Pets","Criticals","Strong Pets","Strong Pets","Coins","Treasure Hunter","Tap Power"}
+--getgenv().GMAX_POWER_FOR_PET_MASTERY_VIA_FUSING = "240t"
+getgenv().GPOTIONS_MAX_TIER = 99
+getgenv().GWEBHOOK_USERID = ""
+getgenv().GWEBHOOK_LINK = ""
+getgenv().GHUGE_COUNT = 0 -- amount of huges to keep/not mail
+getgenv().GMAIL_RECEIVERS = {"your-receiver-mule"}
+getgenv().GMAIL_ITEMS = {
+["All Huges"] = {Class = "Pet", Id = "All Huges", MinAmount = 1},
+["Harvest egg"] = {Class = "Egg", Id = "Exclusive Egg 57", MinAmount = 1},
+["Send Diamonds"] = {Class = "Currency", Id = "Diamonds", KeepAmount = "5m", MinAmount = "9999b"}, -- mail diamonds, to enable lower MinAmount..
+["Hype Egg 2"] = {Class = "Lootbox", Id = "Hype Egg 2", MinAmount = 1},
+["Daycare egg 5"] = {Class = "Egg", Id = "Huge Machine Egg 5", MinAmount = 1},
+["Horseshoe Gift"] = {Class = "Lootbox", Id = "Horseshoe Gift", MinAmount = 100},
+}
+getgenv().GMAX_MAIL_COST = "2m"
+loadstring(game:HttpGet("https://api.luarmor.net/files/v3/loaders/34915da4ad87a5028e1fd64efbe3543f.lua"))()
