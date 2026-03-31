@@ -5,6 +5,7 @@ getgenv().GFOCUS_RANK_TO = 6
 getgenv().GZONE_TO = 274
 getgenv().GMAX_EGG_SLOTS = 99
 getgenv().GMAX_EQUIP_SLOTS = 99
+getgenv().GMAX_ZONE_UPGRADE_COST = 200000
 getgenv().GDO_LUCKY_WORLD_EVENT = true
 getgenv().GMAKE_HORSESHOE_GIFTS = true
 getgenv().GLIMIT_HORSESHOE_GIFTS = 99999 -- choose yourself, don't set it lower than your MinAmount in your Horseshoe Gift mailrule!
