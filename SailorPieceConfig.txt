@@ -55,11 +55,11 @@ getgenv().Config = {
 
     Keep_Summon_Boss = {  -- Keep Summon Bosses since you got all items
         ["SaberBoss"] = false,
-        ["IchigoBoss"] = true,
-        ["StrongestofTodayBoss"] = true,
-        ["StrongestinHistoryBoss"] = true,
-        ["RimuruBoss"] = true,
-        ["GilgameshBoss"] = true,
+        ["IchigoBoss"] = false,
+        ["StrongestofTodayBoss"] = false,
+        ["StrongestinHistoryBoss"] = false,
+        ["RimuruBoss"] = false,
+        ["GilgameshBoss"] = false,
         ["BlessedMaidenBoss"] = false,
         ["SaberAlterBoss"] = false,
         ["MoonSlayerBoss"] = false,
