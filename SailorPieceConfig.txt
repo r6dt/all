@@ -9,7 +9,9 @@ getgenv().Config = {
         Target_Passive = "Fortune Chosen", -- Target Passive On Weapon
         MainTool = {     -- Tools to use for activating passives
             "Strongest In History", 
+            "Strongest Shinobi",
             "Blessed Maiden", 
+            "Moon Slayer",
         },
     },
 
