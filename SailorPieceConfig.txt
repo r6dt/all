@@ -106,7 +106,7 @@ getgenv().Config = {
                 Enable = false,
                 Build = "Damage",
                 MainTool = "Abyssal Empress",
-                WhiteList_Abilities = {4,5}, --
+                WhiteList_Abilities = {2,3}, --
                 AutoReplay = false,
                 Difficulty = "Easy",
             },
@@ -114,7 +114,7 @@ getgenv().Config = {
                 Enable = false,
                 Build = "Damage",
                 MainTool = "Abyssal Empress",
-                WhiteList_Abilities = {4,5},
+                WhiteList_Abilities = {2,3},
                 AutoReplay = false,
             },
     },
