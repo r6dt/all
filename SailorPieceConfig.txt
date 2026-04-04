@@ -77,6 +77,28 @@ getgenv().Config = {
 
     Blacklist_Rank = "Ascend VIII", -- Stop farming rank when reached this rank
 
+    Auto_Upgrade_BossRush = { -- Upgrade boss rush stats when maxed its stop
+        ["Enable"] = false,
+        ["Stats"] = {
+            ["Luck"] = true,
+            ["Damage"] = true,
+            ["CritDamage"] = false,
+            ["CritChance"] = false,
+            ["HP"] = false,
+        }
+    },
+
+    Auto_Upgrade_Tower = { -- Upgrade tower stats when maxed its stop
+        ["Enable"] = false,
+        ["Stats"] = {
+            ["Luck"] = true,
+            ["Damage"] = true,
+            ["CritDamage"] = false,
+            ["CritChance"] = false,
+            ["HP"] = false,
+        }
+    },
+
     End_Farm_Rank = { -- If reached this rank all boss farm is stopped
         Enable = true,
         ["Rank"] = "Ascend VIII",
@@ -101,12 +123,14 @@ getgenv().Config = {
         Horst = false, -- Log Horst
         RAM = false, -- Log RAM
         Custom = {
-            MainWeapon = true,
-            Rank = true,
+            MainWeapon = false,
+            Rank = false,
             Race = false,
+            Rune = false,
             Clan = false,
+            Power = false,
             DamagePercent = false,
-            LuckPercent = true,
+            LuckPercent = false,
             Haki = false,
             Level = false,
             Currencies = false,
