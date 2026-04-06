@@ -15,6 +15,8 @@ getgenv().Config = {
         },
     },
 
+    Max_Rune_Level = false, -- Auto Upgrade Rune to max level
+
     Auto_Reroll_Stats = { -- Stats to reroll to SSS - Z
         ["Damage"] = true,
         ["Luck"] = true,
