@@ -10,7 +10,8 @@ getgenv().Config = {
         MainTool = {     -- Tools to use for activating passives
             "Strongest In History", 
             "Strongest Shinobi",
-            "Blessed Maiden", 
+            "Blessed Maiden",
+            "Abyssal Empress",
             "Moon Slayer",
         },
     },
