@@ -13,6 +13,7 @@ getgenv().Config = {
             "Blessed Maiden",
             "Abyssal Empress",
             "Moon Slayer",
+            "IceQueen",
         },
     },
 
