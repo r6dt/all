@@ -1,7 +1,7 @@
 getgenv().Config = {
     Build = {
         Main = "Luck", -- Base on: "Damage", "Luck"
-        LockRace = "Kitsune", -- Lock to specific race
+        LockRace = "Luckborn", -- Lock to specific race
     },
 
     Auto_Passive = {
@@ -56,6 +56,7 @@ getgenv().Config = {
         ["YamatoBoss"] = true,
         ["StrongestShinobiBoss"] = true,
         ["MoonSlayerBoss"] = true,
+        ["IceQueenBoss"] = false,
     },
 
     Keep_Summon_Boss = {  -- Keep Summon Bosses since you got all items
@@ -68,6 +69,7 @@ getgenv().Config = {
         ["BlessedMaidenBoss"] = false,
         ["SaberAlterBoss"] = false,
         ["MoonSlayerBoss"] = false,
+        ["IceQueenBoss"] = false,
         ["AnosBoss"] = false,
         ["AtomicBoss"] = false,
     },
@@ -120,6 +122,16 @@ getgenv().Config = {
                 WhiteList_Abilities = {3,2},
                 AutoReplay = false,
             },
+    },
+
+    Advanced_Item_Config = {
+        ["Use Common Chest"] = true, -- Auto Use Common Chest
+        ["Use Rare Chest"] = true, -- Auto Use Rare Chest
+        ["Use Epic Chest"] = true, -- Auto Use Epic Chest
+        ["Use Legendary Chest"] = true, -- Auto Use Legendary Chest
+        ["Use Cosmetic Crate (Untradeable)"] = true, -- Auto Use Cosmetic Crate (Untradeable)
+        ["Use Aura Crate (Untradeable)"] = true, -- Auto Use Aura Crate (Untradeable)
+        ["Use Secret Chest (Untradeable)"] = true, -- Auto Use Secret Chest (Untradeable)
     },
 
     Log = {
