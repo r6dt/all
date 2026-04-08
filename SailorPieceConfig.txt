@@ -125,16 +125,6 @@ getgenv().Config = {
             },
     },
 
-    Advanced_Item_Config = {
-        ["Use Common Chest"] = true, -- Auto Use Common Chest
-        ["Use Rare Chest"] = true, -- Auto Use Rare Chest
-        ["Use Epic Chest"] = true, -- Auto Use Epic Chest
-        ["Use Legendary Chest"] = true, -- Auto Use Legendary Chest
-        ["Use Cosmetic Crate (Untradeable)"] = true, -- Auto Use Cosmetic Crate (Untradeable)
-        ["Use Aura Crate (Untradeable)"] = true, -- Auto Use Aura Crate (Untradeable)
-        ["Use Secret Chest (Untradeable)"] = true, -- Auto Use Secret Chest (Untradeable)
-    },
-
     Log = {
         Horst = false, -- Log Horst
         RAM = false, -- Log RAM
