@@ -14,6 +14,7 @@ getgenv().Config = {
             "Saber Alter",
             "Soul Reaper",
             "Abyssal Empress",
+            "Moon Slayer"
             "Ice Queen"
         },
     },
