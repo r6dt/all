@@ -105,6 +105,16 @@ getgenv().Config = {
         }
     },
 
+    Advanced_Item_Config = {
+        ["Use Common Chest"] = false, -- Auto Use Common Chest
+        ["Use Rare Chest"] = false, -- Auto Use Rare Chest
+        ["Use Epic Chest"] = false, -- Auto Use Epic Chest
+        ["Use Legendary Chest"] = false, -- Auto Use Legendary Chest
+        ["Use Cosmetic Crate (Untradeable)"] = false, -- Auto Use Cosmetic Crate (Untradeable)
+        ["Use Aura Crate (Untradeable)"] = false, -- Auto Use Aura Crate (Untradeable)
+        ["Use Secret Chest (Untradeable)"] = false, -- Auto Use Secret Chest (Untradeable)
+    },
+
     End_Farm_Rank = { -- If reached this rank all boss farm is stopped
         Enable = true,
         ["Rank"] = "Ascend VIII",
