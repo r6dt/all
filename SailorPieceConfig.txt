@@ -8,12 +8,13 @@ getgenv().Config = {
         Enable = true, -- Enable/Disable passive reroll
         Target_Passive = "Fortune Chosen", -- Target Passive On Weapon
         MainTool = {     -- Tools to use for activating passives
-            "Strongest In History", 
+            "Strongest In History",
             "Strongest Shinobi",
             "Blessed Maiden",
+            "Saber Alter",
+            "Soul Reaper",
             "Abyssal Empress",
-            "Moon Slayer",
-            "IceQueen",
+            "Ice Queen"
         },
     },
 
