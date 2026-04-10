@@ -27,8 +27,8 @@ getgenv().Config = {
         ["CritDamage"] = true,
         ["CritChance"] = true,
         ["Defense"] = true,
-        ["CooldownReduction"] = false,
-        ["DamageReduction"] = false,
+        ["CooldownReduction"] = true,
+        ["DamageReduction"] = true,
     },
 
     Specific_Trait = {"Emperor"}, -- Find Target Trait
