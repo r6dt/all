@@ -4,7 +4,7 @@ getgenv().Config = {
     Build = {
         ["Main"] = "Luck", -- Base on: "Damage", "Luck"
         ["LockRace"] = "Luckborn", -- Lock to specific race
-        ["Accessory"] = "Ice Queen Outfit", -- Accessory to use, set to "None" to ignore accessory
+        ["Accessory"] = "Auto", -- Accessory to use, set to "None" to ignore accessory
     },
     Auto_Passive = {
         ["Enable"] = true, -- Need to enable this to use below features
@@ -32,7 +32,7 @@ getgenv().Config = {
     Specific_Trait = {"Emperor"}, -- Find Target Trait
     Specific_Clan = {"Eminence"}, -- Left {} if you want any legendary clan
     Specific_Power = {"Colossus"}, -- Find Target Power
-    Blacklist_Rank = {"Ascend VIII"}, -- Stop farming rank when reached this rank
+    Blacklist_Rank = {"Ascend X"}, -- Stop farming rank when reached this rank
 
     --============= WEAPON AND ACCESSORY CONFIG =============--
     AutoBless_Weapons = {
@@ -64,34 +64,34 @@ getgenv().Config = {
 
     --============= ADVANCED WORLD BOSS CONFIG =============--
     WorldBoss_Configuration = {
-        ["Enable"] = false, -- Need to enable this to use below features
-        ["MainTool"] = "None", -- Tool to use for farming world boss
-        ["WhiteList_Abilities"] = {1}, -- Only use these abilities
+        ["Enable"] = true, -- Need to enable this to use below features
+        ["MainTool"] = "Auto", -- Tool to use for farming world boss
+        ["WhiteList_Abilities"] = {3,2}, -- Only use these abilities
     },
     Blacklist_Bosses = { -- WARNING DISABLE SOME BOSS YOU WON'T GET ITEM FOR WEAPON/RANK ASCEND
         ["SaberBoss"] = false,
         ["GojoBoss"] = false,
         ["SukunaBoss"] = false,
         ["JinwooBoss"] = false,
-        ["RagnaBoss"] = false,
+        ["RagnaBoss"] = true,
         ["AizenBoss"] = false,
         ["TrueAizenBoss"] = false,
-        ["QinShiBoss"] = false,
+        ["QinShiBoss"] = true,
         ["YujiBoss"] = false,
         ["AlucardBoss"] = false,
         ["IchigoBoss"] = false,
         ["StrongestofTodayBoss"] = false,
         ["StrongestinHistoryBoss"] = false,
         ["RimuruBoss"] = false,
-        ["MadokaBoss"] = false,
+        ["MadokaBoss"] = true,
         ["GilgameshBoss"] = false,
-        ["BlessedMaidenBoss"] = false,
+        ["BlessedMaidenBoss"] = true,
         ["SaberAlterBoss"] = false,
-        ["AnosBoss"] = false,
-        ["AtomicBoss"] = false,
+        ["AnosBoss"] = true,
+        ["AtomicBoss"] = true,
         ["YamatoBoss"] = false,
         ["StrongestShinobiBoss"] = false,
-        ["MoonSlayerBoss"] = false,
+        ["MoonSlayerBoss"] = true,
         ["IceQueenBoss"] = false,
     },
     Keep_Summon_Boss = {  -- Keep Summon Bosses since you got all items
@@ -112,7 +112,7 @@ getgenv().Config = {
     --============= DUNGEON CONFIG =============--    
     Dungeon_Configuration = { -- If reached this rank do BossRush/Tower until out of keys
         ["Enable"] = false, -- Need to enable this to use below features
-        ["Rank"] = {"Ascend VIII"}, -- IF RANK MATCHED, DO BOSS RUSH/TOWER
+        ["Rank"] = {"Ascend X"}, -- IF RANK MATCHED, DO BOSS RUSH/TOWER
         ["BossRush"] = {
             ["Enable"] = false,
             ["Build"] = "Damage",
@@ -126,14 +126,14 @@ getgenv().Config = {
             ["Build"] = "Damage",
             ["MainTool"] = "Abyssal Empress",
             ["WhiteList_Abilities"] = {3,2},
-            ["Limit_Floor"] = 100,
+            ["Limit_Floor"] = 80,
             ["AutoReplay"] = false,
         },
     },
 
     --============= AUTO UPGRADE CONFIG =============--
     Auto_Upgrade_BossRush = { -- Upgrade boss rush stats when maxed its stop
-        ["Enable"] = false, -- Need to enable this to use below features
+        ["Enable"] = true, -- Need to enable this to use below features
         ["Stats"] = {
             ["Luck"] = true,
             ["Damage"] = true,
@@ -143,7 +143,7 @@ getgenv().Config = {
         }
     },
     Auto_Upgrade_Tower = { -- Upgrade tower stats when maxed its stop
-        ["Enable"] = false, -- Need to enable this to use below features
+        ["Enable"] = true, -- Need to enable this to use below features
         ["Stats"] = {
             ["Luck"] = true,
             ["Damage"] = true,
@@ -152,7 +152,7 @@ getgenv().Config = {
             ["HP"] = false,
         }
     },
-    Max_Rune_Level = false, -- Auto Upgrade Rune to max level
+    Max_Rune_Level = true, -- Auto Upgrade Rune to max level
 
     --============= ITEM USING CONFIG =============--
     Advanced_Item_Config = {
@@ -207,8 +207,8 @@ getgenv().Config = {
         }
     },
     Require_Private_Server = {
-        Kick = true, -- Auto Kick Player if not in Private Server
-        LeaveServer = false, -- Auto Leave Server and return to home page if not in Private Server
+        Kick = false, -- Auto Kick Player if not in Private Server
+        LeaveServer = true, -- Auto Leave Server and return to home page if not in Private Server
     }
 }
 loadstring(game:HttpGet("https://api.luarmor.net/files/v4/loaders/5e53e03e462e69f749e2c1d56473860a.lua"))()
