@@ -64,7 +64,7 @@ getgenv().Config = {
 
     --============= ADVANCED WORLD BOSS CONFIG =============--
     WorldBoss_Configuration = {
-        ["Enable"] = true, -- Need to enable this to use below features
+        ["Enable"] = false, -- Need to enable this to use below features
         ["MainTool"] = "Auto", -- Tool to use for farming world boss
         ["WhiteList_Abilities"] = {3,2}, -- Only use these abilities
     },
@@ -118,7 +118,7 @@ getgenv().Config = {
             ["Build"] = "Damage",
             ["MainTool"] = "Abyssal Empress",
             ["WhiteList_Abilities"] = {3,2},
-            ["AutoReplay"] = true,
+            ["AutoReplay"] = false,
             ["Difficulty"] = "Easy",
         },
         ["Tower"] = {
@@ -127,7 +127,7 @@ getgenv().Config = {
             ["MainTool"] = "Abyssal Empress",
             ["WhiteList_Abilities"] = {3,2},
             ["Limit_Floor"] = 80,
-            ["AutoReplay"] = true,
+            ["AutoReplay"] = false,
         },
     },
 
