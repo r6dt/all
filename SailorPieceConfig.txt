@@ -65,7 +65,7 @@ getgenv().Config = {
     --============= ADVANCED WORLD BOSS CONFIG =============--
     WorldBoss_Configuration = {
         ["Enable"] = true, -- Need to enable this to use below features
-        ["MainTool"] = "Ice Queen", -- Tool to use for farming world boss
+        ["MainTool"] = "Auto", -- Tool to use for farming world boss
         ["WhiteList_Abilities"] = {3,2}, -- Only use these abilities
     },
     Blacklist_Bosses = { -- WARNING DISABLE SOME BOSS YOU WON'T GET ITEM FOR WEAPON/RANK ASCEND
@@ -116,7 +116,7 @@ getgenv().Config = {
         ["BossRush"] = {
             ["Enable"] = false,
             ["Build"] = "Damage",
-            ["MainTool"] = "Ice Queen",
+            ["MainTool"] = "Abyssal Empress",
             ["WhiteList_Abilities"] = {3,2},
             ["AutoReplay"] = true,
             ["Difficulty"] = "Easy",
@@ -124,7 +124,7 @@ getgenv().Config = {
         ["Tower"] = {
             ["Enable"] = false,
             ["Build"] = "Damage",
-            ["MainTool"] = "Ice Queen",
+            ["MainTool"] = "Abyssal Empress",
             ["WhiteList_Abilities"] = {3,2},
             ["Limit_Floor"] = 80,
             ["AutoReplay"] = true,
@@ -195,7 +195,7 @@ getgenv().Config = {
                 ["Strongest Shinobi"] = false,
                 ["Abyssal Empress"] = false,
                 ["Moon Slayer"] = false,
-                ["Ice Queen"] = false,
+                ["Ice Queen"] = true,
                 ["Atomic"] = false,
                 ["True Aizen"] = false,
             },
