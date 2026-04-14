@@ -126,7 +126,7 @@ getgenv().Config = {
             ["Build"] = "Damage",
             ["MainTool"] = "Abyssal Empress",
             ["WhiteList_Abilities"] = {3,2},
-            ["Limit_Floor"] = 80,
+            ["Limit_Floor"] = 80
             ["AutoReplay"] = false,
         },
     },
