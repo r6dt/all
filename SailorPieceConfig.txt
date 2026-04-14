@@ -92,7 +92,7 @@ getgenv().Config = {
         ["YamatoBoss"] = true,
         ["StrongestShinobiBoss"] = false,
         ["MoonSlayerBoss"] = true,
-        ["IceQueenBoss"] = true,
+        ["IceQueenBoss"] = false,
     },
     Keep_Summon_Boss = {  -- Keep Summon Bosses since you got all items
         ["SaberBoss"] = false,
