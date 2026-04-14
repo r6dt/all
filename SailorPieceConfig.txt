@@ -32,7 +32,7 @@ getgenv().Config = {
     Specific_Trait = {"Emperor"}, -- Find Target Trait
     Specific_Clan = {"Eminence"}, -- Left {} if you want any legendary clan
     Specific_Power = {"Colossus"}, -- Find Target Power
-    Blacklist_Rank = {"Ascend X"}, -- Stop farming rank when reached this rank
+    Blacklist_Rank = {"Ascend IX" , "Ascend X"}, -- Stop farming rank when reached this rank
 
     --============= WEAPON AND ACCESSORY CONFIG =============--
     AutoBless_Weapons = {
