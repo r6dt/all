@@ -112,7 +112,7 @@ getgenv().Config = {
     --============= DUNGEON CONFIG =============--    
     Dungeon_Configuration = { -- If reached this rank do BossRush/Tower until out of keys
         ["Enable"] = false, -- Need to enable this to use below features
-        ["Rank"] = {"Ascend X"}, -- IF RANK MATCHED, DO BOSS RUSH/TOWER
+        ["Rank"] = {"Ascend IX" , "Ascend X"}, -- IF RANK MATCHED, DO BOSS RUSH/TOWER
         ["BossRush"] = {
             ["Enable"] = false,
             ["Build"] = "Damage",
