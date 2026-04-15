@@ -110,7 +110,7 @@ getgenv().Config = {
 
     --============= DUNGEON CONFIG =============--    
     Dungeon_Configuration = { -- If reached this rank do BossRush/Tower until out of keys
-        ["Enable"] = false, -- Need to enable this to use below features
+        ["Enable"] = true, -- Need to enable this to use below features
         ["Rank"] = {"Ascend X"}, -- IF RANK MATCHED, DO BOSS RUSH/TOWER
         ["BossRush"] = {
             ["Enable"] = false,
@@ -121,18 +121,18 @@ getgenv().Config = {
             ["Difficulty"] = "Easy",
         },
         ["Tower"] = {
-            ["Enable"] = false,
+            ["Enable"] = true,
             ["Build"] = "Damage",
             ["MainTool"] = "Ice Queen",
             ["WhiteList_Abilities"] = {3,2},
-            ["Limit_Floor"] = 80,
-            ["AutoReplay"] = false,
+            ["Limit_Floor"] = 56,
+            ["AutoReplay"] = true,
         },
     },
 
     --============= AUTO UPGRADE CONFIG =============--
     Auto_Upgrade_BossRush = { -- Upgrade boss rush stats when maxed its stop
-        ["Enable"] = false, -- Need to enable this to use below features
+        ["Enable"] = true, -- Need to enable this to use below features
         ["Stats"] = {
             ["Luck"] = true,
             ["Damage"] = true,
@@ -142,7 +142,7 @@ getgenv().Config = {
         }
     },
     Auto_Upgrade_Tower = { -- Upgrade tower stats when maxed its stop
-        ["Enable"] = false, -- Need to enable this to use below features
+        ["Enable"] = true, -- Need to enable this to use below features
         ["Stats"] = {
             ["Luck"] = true,
             ["Damage"] = true,
