@@ -48,11 +48,10 @@ getgenv().Config = {
             "Ice Queen",
         }
     },
-    AutoEnchant_Accessory = {
+    Auto_E10_Accessory = {
         ["Enable"] = true, -- Need to enable this to use below features
-        ["Accessory"] = {
-            "Ice Queen Outfit",
-        }
+        ["Boss"] = "IceQueenBoss", -- Boss to farm accessory
+        ["Accessory"] = "Ice Queen Outfit", -- Target Accessory to enchant
     },
 
     --============= MULTI-ISLAND FARM CONFIG =============--
@@ -104,7 +103,7 @@ getgenv().Config = {
         ["BlessedMaidenBoss"] = false,
         ["SaberAlterBoss"] = false,
         ["MoonSlayerBoss"] = false,
-        ["IceQueenBoss"] = true,
+        ["IceQueenBoss"] = false,
         ["AnosBoss"] = false,
         ["AtomicBoss"] = false,
     },
