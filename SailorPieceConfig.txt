@@ -117,7 +117,7 @@ getgenv().Config = {
             ["Build"] = "Damage",
             ["MainTool"] = "Ice Queen",
             ["WhiteList_Abilities"] = {3,2},
-            ["AutoReplay"] = false,
+            ["AutoReplay"] = true,
             ["Difficulty"] = "Easy",
         },
         ["Tower"] = {
