@@ -142,7 +142,7 @@ getgenv().Config = {
         }
     },
     Auto_Upgrade_Tower = { -- Upgrade tower stats when maxed its stop
-        ["Enable"] = true, -- Need to enable this to use below features
+        ["Enable"] = false, -- Need to enable this to use below features
         ["Stats"] = {
             ["Luck"] = true,
             ["Damage"] = false,
