@@ -93,10 +93,11 @@ getgenv().Config = {
         ["AnosBoss"] = false,
         ["AtomicBoss"] = false,
         ["YamatoBoss"] = false,
-        ["StrongestShinobiBoss"] = false,
-        ["MoonSlayerBoss"] = true,
-        ["IceQueenBoss"] = false,
         ["GreatMageBoss"] = false,
+        ["StrongestShinobiBoss"] = false,
+        ["MoonSlayerBoss"] = false,
+        ["TheWorldBoss"] = false,
+        ["IceQueenBoss"] = false,
     },
     Keep_Summon_Boss = {  -- Keep Summon Bosses since you got all items
         ["SaberBoss"] = false,
@@ -110,6 +111,8 @@ getgenv().Config = {
         ["MoonSlayerBoss"] = false,
         ["IceQueenBoss"] = false,
         ["AnosBoss"] = false,
+        ["GreatMageBoss"] = false,
+        ["TheWorldBoss"] = true,
         ["AtomicBoss"] = false,
     },
 
