@@ -1,5 +1,8 @@
 getgenv().Config = {
 
+    --=============== World Configuration ===============--
+    World = "Sea2", -- World to play, set to "Sea1" or "Sea2"
+
     --=============== BUILD CONFIG ==============--
     Build = {
         ["Main"] = "Luck", -- Base on: "Damage", "Luck"
