@@ -23,6 +23,8 @@ getgenv().Config = {
             "Abyssal Empress",
             "Moon Slayer",
             "Ice Queen",
+            "Cosmic Being",
+            "Great Mage",
         },
     },
     Auto_Reroll_Stats = { -- Stats to reroll to SSS - Z
@@ -51,6 +53,8 @@ getgenv().Config = {
             "Abyssal Empress",
             "Moon Slayer",
             "Ice Queen",
+            "Cosmic Being",
+            "Great Mage",
         }
     },
     Auto_E10_Accessory = {
