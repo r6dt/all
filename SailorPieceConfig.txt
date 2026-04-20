@@ -114,7 +114,7 @@ getgenv().Config = {
         ["IceQueenBoss"] = false,
         ["AnosBoss"] = false,
         ["GreatMageBoss"] = false,
-        ["TheWorldBoss"] = true,
+        ["TheWorldBoss"] = false,
         ["AtomicBoss"] = false,
     },
 
