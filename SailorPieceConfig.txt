@@ -9,6 +9,7 @@ getgenv().Config = {
         ["LockRace"] = "Luckborn", -- Lock to specific race
         ["Accessory"] = "Auto", -- Accessory to use, set to "None" to ignore accessory
         ["LockBloodline"] = "Primordial",
+        ["LockRelic"] = "LuckRelic",
     },
     Auto_Passive = {
         ["Enable"] = true, -- Need to enable this to use below features
@@ -157,6 +158,14 @@ getgenv().Config = {
             ["CritDamage"] = false,
             ["CritChance"] = false,
             ["HP"] = false,
+        }
+    },
+    Auto_Upgrade_Easter = { -- Upgrade tower stats when maxed its stop
+        ["Enable"] = true, -- Need to enable this to use below features
+        ["Stats"] = {
+            ["EggDropChance"] = true,
+            ["EggBonus"] = true,
+            ["BossLuck"] = true,
         }
     },
     Max_Rune_Level = true, -- Auto Upgrade Rune to max level
