@@ -39,7 +39,7 @@ getgenv().Config = {
     Specific_Trait = {"Emperor"}, -- Find Target Trait
     Specific_Clan = {"Eminence"}, -- Left {} if you want any legendary clan
     Specific_Power = {"Colossus"}, -- Find Target Power
-    Blacklist_Rank = {"Ascend VIII", "Ascend IX", "Ascend X"}, -- Stop farming rank when reached this rank
+    Blacklist_Rank = {"Ascend IX", "Ascend X"}, -- Stop farming rank when reached this rank
 
     --============= WEAPON AND ACCESSORY CONFIG =============--
     AutoBless_Weapons = {
@@ -136,7 +136,7 @@ getgenv().Config = {
     --============= DUNGEON CONFIG =============--    
     Dungeon_Configuration = { -- If reached this rank do BossRush/Tower until out of keys
         ["Enable"] = true, -- Need to enable this to use below features
-        ["Rank"] = {"Ascend VIII", "Ascend IX", "Ascend X"}, -- IF RANK MATCHED, DO BOSS RUSH/TOWER
+        ["Rank"] = {"Ascend IX", "Ascend X"}, -- IF RANK MATCHED, DO BOSS RUSH/TOWER
         ["BossRush"] = {
             ["Enable"] = false,
             ["Build"] = "Damage",
