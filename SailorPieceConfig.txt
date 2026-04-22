@@ -69,6 +69,17 @@ getgenv().Config = {
         ["MainTool"] = "Strongest In History", -- Tool to use for farming mobs on other islands
         ["WhiteList_Abilities"] = {2}, -- Only use these abilities
     },
+    SeaBoss_Configuration = {
+        ["Enable"] = false, -- Need to enable this to use below features
+        ["MainTool"] = "True Aizen", -- Tool to use for farming sea boss
+        ["WhiteList_Abilities"] = {3,2}, -- Only use these abilities
+        ["CheckInterval"] = 60, -- teleport to open sea to spawn sea boss every X seconds
+        ["WaitTime"] = "AutoSync", -- Wait time set to "AutoSync" to automatically sync with bounty timer, or set to number (in seconds) 
+        ["Bosses"] = {
+            ["Kraken"] = true,
+            ["Sea Serpent"] = true,
+        }
+    },
 
     --============= ADVANCED WORLD BOSS CONFIG =============--
     WorldBoss_Configuration = {
