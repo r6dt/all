@@ -23,6 +23,7 @@ getgenv().Config = {
             "Abyssal Empress",
             "Moon Slayer",
             "Ice Queen",
+            "The World",
             "Cosmic Being",
             "Great Mage",
         },
@@ -53,6 +54,7 @@ getgenv().Config = {
             "Abyssal Empress",
             "Moon Slayer",
             "Ice Queen",
+            "The World",
             "Cosmic Being",
             "Great Mage",
         }
