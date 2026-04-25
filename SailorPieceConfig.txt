@@ -61,8 +61,8 @@ getgenv().Config = {
     },
     Auto_E10_Accessory = {
         ["Enable"] = true, -- Need to enable this to use below features
-        ["Boss"] = "CosmicBeingBoss", -- Boss to farm accessory
-        ["Accessory"] = "Cosmic Body", -- Target Accessory to enchant
+        ["Boss"] = "TheWorldBoss", -- Boss to farm accessory
+        ["Accessory"] = "World Outfit", -- Target Accessory to enchant
     },
 
     --============= MULTI-ISLAND FARM CONFIG =============--
