@@ -8,8 +8,33 @@ getgenv().Config = {
         ["Main"] = "Luck", -- Base on: "Damage", "Luck"
         ["LockRace"] = "Luckborn", -- Lock to specific race
         ["Accessory"] = "Auto", -- Accessory to use, set to "None" to ignore accessory
-        ["LockBloodline"] = "Primordial",
-        ["LockRelic"] = "LuckRelic",
+        ["LockBloodline"] = "Primordial", -- Lock to specific bloodline, set to "None" to ignore bloodline
+        ["LockRelic"] = "LuckRelic", -- Lock to specific relic, set to "None" to ignore relic
+    },
+    Auto_Reroll_Stats = { -- Stats to reroll to SSS - Z
+        ["Damage"] = true,
+        ["Luck"] = true,
+        ["CritDamage"] = true,
+        ["CritChance"] = true,
+        ["Defense"] = true,
+        ["CooldownReduction"] = true,
+        ["DamageReduction"] = true,
+    },
+    Specific_Trait = {"Emperor"}, -- Find Target Trait
+    Specific_Clan = {"Devil"}, -- Left {} if you want any legendary clan
+    Specific_Power = {"Subjugator"}, -- Find Target Power
+    Blacklist_Rank = {"Ascend IX", "Ascend X"}, -- Stop farming rank when reached this rank
+
+    --============= AUTO PASSIVE CONFIG =============--
+    Custom_Passive = {
+        ["Enable"] = true, -- Need to enable this to use below features
+        ["Target_Passive"] = "Fortune Chosen", -- Target Passive On Weapon
+        ["Stats"] = {
+            ["DamagePercent"] = 0,
+            ["CritChance"] = 0,
+            ["CritDamage"] = 0,
+            ["Luck"] = 9,
+        }
     },
     Auto_Passive = {
         ["Enable"] = true, -- Need to enable this to use below features
@@ -25,22 +50,9 @@ getgenv().Config = {
             "Ice Queen",
             "The World",
             "Cosmic Being",
-            "Great Mage",
+            "Great Mage", 
         },
     },
-    Auto_Reroll_Stats = { -- Stats to reroll to SSS - Z
-        ["Damage"] = true,
-        ["Luck"] = true,
-        ["CritDamage"] = true,
-        ["CritChance"] = true,
-        ["Defense"] = true,
-        ["CooldownReduction"] = true,
-        ["DamageReduction"] = true,
-    },
-    Specific_Trait = {"Emperor"}, -- Find Target Trait
-    Specific_Clan = {"Devil"}, -- Left {} if you want any legendary clan
-    Specific_Power = {"Subjugator"}, -- Find Target Power
-    Blacklist_Rank = {"Ascend IX", "Ascend X"}, -- Stop farming rank when reached this rank
 
     --============= WEAPON AND ACCESSORY CONFIG =============--
     AutoBless_Weapons = {
@@ -71,6 +83,13 @@ getgenv().Config = {
         ["MainTool"] = "Strongest In History", -- Tool to use for farming mobs on other islands
         ["WhiteList_Abilities"] = {2}, -- Only use these abilities
     },
+
+    --============= ADVANCED WORLD BOSS CONFIG =============--
+    WorldBoss_Configuration = {
+        ["Enable"] = false, -- Need to enable this to use below features
+        ["MainTool"] = "Auto", -- Tool to use for farming world boss
+        ["WhiteList_Abilities"] = {3,2}, -- Only use these abilities
+    },
     SeaBoss_Configuration = {
         ["Enable"] = false, -- Need to enable this to use below features
         ["MainTool"] = "True Aizen", -- Tool to use for farming sea boss
@@ -81,13 +100,6 @@ getgenv().Config = {
             ["Kraken"] = true,
             ["Sea Serpent"] = true,
         }
-    },
-
-    --============= ADVANCED WORLD BOSS CONFIG =============--
-    WorldBoss_Configuration = {
-        ["Enable"] = false, -- Need to enable this to use below features
-        ["MainTool"] = "Auto", -- Tool to use for farming world boss
-        ["WhiteList_Abilities"] = {3,2}, -- Only use these abilities
     },
     Blacklist_Bosses = { -- WARNING DISABLE SOME BOSS YOU WON'T GET ITEM FOR WEAPON/RANK ASCEND
         ["SaberBoss"] = false,
@@ -137,24 +149,31 @@ getgenv().Config = {
 
     --============= DUNGEON CONFIG =============--    
     Dungeon_Configuration = { -- If reached this rank do BossRush/Tower until out of keys
-        ["Enable"] = true, -- Need to enable this to use below features
+        ["Enable"] = false, -- Need to enable this to use below features
         ["Rank"] = {"Ascend IX", "Ascend X"}, -- IF RANK MATCHED, DO BOSS RUSH/TOWER
         ["BossRush"] = {
             ["Enable"] = false,
             ["Build"] = "Damage",
-            ["MainTool"] = "Ice Queen",
+            ["MainTool"] = "Abyssal Empress",
             ["WhiteList_Abilities"] = {3,2},
-            ["AutoReplay"] = true,
+            ["AutoReplay"] = false,
             ["Difficulty"] = "Easy",
         },
         ["Tower"] = {
             ["Enable"] = false,
             ["Build"] = "Damage",
-            ["MainTool"] = "Ice Queen",
+            ["MainTool"] = "Abyssal Empress",
             ["WhiteList_Abilities"] = {3,2},
-            ["Limit_Floor"] = 56,
-            ["AutoReplay"] = true,
+            ["Limit_Floor"] = 100,
+            ["AutoReplay"] = false,
         },
+        ["Crystal"] = {
+            ["Enable"] = false,
+            ["Build"] = "Damage",
+            ["MainTool"] = "Abyssal Empress",
+            ["WhiteList_Abilities"] = {3,2},
+            ["AutoReplay"] = false,
+        }
     },
 
     --============= AUTO UPGRADE CONFIG =============--
@@ -162,7 +181,7 @@ getgenv().Config = {
         ["Enable"] = false, -- Need to enable this to use below features
         ["Stats"] = {
             ["Luck"] = true,
-            ["Damage"] = false,
+            ["Damage"] = true,
             ["CritDamage"] = false,
             ["CritChance"] = false,
             ["HP"] = false,
@@ -172,21 +191,21 @@ getgenv().Config = {
         ["Enable"] = false, -- Need to enable this to use below features
         ["Stats"] = {
             ["Luck"] = true,
-            ["Damage"] = false,
+            ["Damage"] = true,
             ["CritDamage"] = false,
             ["CritChance"] = false,
             ["HP"] = false,
         }
     },
     Auto_Upgrade_Easter = { -- Upgrade tower stats when maxed its stop
-        ["Enable"] = true, -- Need to enable this to use below features
+        ["Enable"] = false, -- Need to enable this to use below features
         ["Stats"] = {
             ["EggDropChance"] = true,
             ["EggBonus"] = true,
             ["BossLuck"] = true,
         }
     },
-    Max_Rune_Level = true, -- Auto Upgrade Rune to max level
+    Max_Rune_Level = false, -- Auto Upgrade Rune to max level
 
     --============= ITEM USING CONFIG =============--
     Advanced_Item_Config = {
@@ -203,6 +222,7 @@ getgenv().Config = {
         Horst = false, -- Log Horst
         RAM = false, -- Log RAM
         Custom = {
+            ["TrackSea"] = false,
             ["MainWeapon"] = false,
             ["Rank"] = false,
             ["Race"] = false,
@@ -210,6 +230,9 @@ getgenv().Config = {
             ["Clan"] = false,
             ["Trait"] = false,
             ["Power"] = false,
+            ["Bloodline"] = false,
+            ["Relic"] = false,
+            ["Bounty"] = false,
             ["DamagePercent"] = false,
             ["LuckPercent"] = false,
             ["Haki"] = false,
@@ -229,7 +252,12 @@ getgenv().Config = {
                 ["Strongest Shinobi"] = false,
                 ["Abyssal Empress"] = false,
                 ["Moon Slayer"] = false,
-                ["Ice Queen"] = true,
+                ["Ice Queen"] = false,
+                ["Great Mage"] = false,
+                ["TheWorld"] = false,
+                ["Cosmic Being"] = false,
+                ["Dragon Goddess"] = false,
+                ["Anti Magic"] = false,
                 ["Atomic"] = false,
                 ["True Aizen"] = false,
             },
