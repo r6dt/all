@@ -27,7 +27,7 @@ getgenv().Config = {
 
     --============= AUTO PASSIVE CONFIG =============--
     Custom_Passive = {
-        ["Enable"] = true, -- Need to enable this to use below features
+        ["Enable"] = false, -- Need to enable this to use below features
         ["Target_Passive"] = "Fortune Chosen", -- Target Passive On Weapon
         ["Stats"] = {
             ["DamagePercent"] = 0,
@@ -37,7 +37,7 @@ getgenv().Config = {
         }
     },
     Auto_Passive = {
-        ["Enable"] = true, -- Need to enable this to use below features
+        ["Enable"] = false, -- Need to enable this to use below features
         ["Target_Passive"] = "Fortune Chosen", -- Target Passive On Weapon
         ["MainTool"] = {     -- Tools to use for activating passives
             "Strongest In History",
