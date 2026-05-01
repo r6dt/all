@@ -86,8 +86,8 @@ getgenv().Config = {
 
     --============= ADVANCED WORLD BOSS CONFIG =============--
     WorldBoss_Configuration = {
-        ["Enable"] = false, -- Need to enable this to use below features
-        ["MainTool"] = "auto", -- Tool to use for farming world boss
+        ["Enable"] = true, -- Need to enable this to use below features
+        ["MainTool"] = "The World", -- Tool to use for farming world boss
         ["WhiteList_Abilities"] = {3,2}, -- Only use these abilities
     },
     SeaBoss_Configuration = {
