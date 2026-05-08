@@ -30,7 +30,7 @@ getgenv().Config = {
         ["Enable"] = true, -- Need to enable this to use below features
         ["Target_Passive"] = "Fortune Chosen", -- Target Passive On Weapon
         ["Stats"] = {
-            ["DamagePercent"] = 0,
+            ["DamagePercent"] = 12,
             ["CritChance"] = 0,
             ["CritDamage"] = 0,
             ["Luck"] = 9,
@@ -188,6 +188,16 @@ getgenv().Config = {
         }
     },
     Auto_Upgrade_Tower = { -- Upgrade tower stats when maxed its stop
+        ["Enable"] = false, -- Need to enable this to use below features
+        ["Stats"] = {
+            ["Luck"] = true,
+            ["Damage"] = true,
+            ["CritDamage"] = false,
+            ["CritChance"] = false,
+            ["HP"] = false,
+        }
+    },
+    Auto_Upgrade_Crystal = { -- Upgrade crystal stats when maxed its stop (Only Work in Sea 2)
         ["Enable"] = false, -- Need to enable this to use below features
         ["Stats"] = {
             ["Luck"] = true,
