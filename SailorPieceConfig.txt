@@ -1,14 +1,14 @@
 getgenv().Config = {
 
     --=============== World Configuration ===============--
-    World = "Sea1", -- World to play, set to "Sea1" or "Sea2"
+    World = "Sea2", -- World to play, set to "Sea1" or "Sea2"
 
     --=============== BUILD CONFIG ==============--
     Build = {
         ["Main"] = "Luck", -- Base on: "Damage", "Luck"
-        ["LockRace"] = "Luckborn", -- Lock to specific race
+        ["LockRace"] = "Angel", -- Lock to specific race
         ["Accessory"] = "Auto", -- Accessory to use, set to "None" to ignore accessory
-        ["LockBloodline"] = "Primordial", -- Lock to specific bloodline, set to "None" to ignore bloodline
+        ["LockBloodline"] = "Empyrean", -- Lock to specific bloodline, set to "None" to ignore bloodline
         ["LockRelic"] = "LuckRelic", -- Lock to specific relic, set to "None" to ignore relic
     },
     Auto_Reroll_Stats = { -- Stats to reroll to SSS - Z
