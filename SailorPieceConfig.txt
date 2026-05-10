@@ -129,6 +129,8 @@ getgenv().Config = {
         ["TheWorldBoss"] = false,
         ["IceQueenBoss"] = false,
         ["CosmicBeingBoss"] = false,
+        ["SunGodBoss"] = false,
+        ["SpiritWarriorBoss"] = false,
     },
     Keep_Summon_Boss = {  -- Keep Summon Bosses since you got all items
         ["SaberBoss"] = false,
@@ -145,12 +147,13 @@ getgenv().Config = {
         ["GreatMageBoss"] = false,
         ["TheWorldBoss"] = false,
         ["AtomicBoss"] = false,
+        ["SpiritWarriorBoss"] = false,
     },
 
     --============= DUNGEON CONFIG =============--    
     Dungeon_Configuration = { -- If reached this rank do BossRush/Tower until out of keys
         ["Enable"] = false, -- Need to enable this to use below features
-        ["Rank"] = {"Ascend IX", "Ascend X"}, -- IF RANK MATCHED, DO BOSS RUSH/TOWER
+        ["Rank"] = {"Ascend IX"}, -- IF RANK MATCHED, DO BOSS RUSH/TOWER
         ["BossRush"] = {
             ["Enable"] = false,
             ["Build"] = "Damage",
@@ -173,7 +176,15 @@ getgenv().Config = {
             ["MainTool"] = "Abyssal Empress",
             ["WhiteList_Abilities"] = {3,2},
             ["AutoReplay"] = false,
-        }
+        },
+        ["Raid"] = {
+            ["Enable"] = false,
+            ["Build"] = "Damage",
+            ["MainTool"] = "Abyssal Empress",
+            ["WhiteList_Abilities"] = {3,2},
+            ["AutoReplay"] = false,
+            ["Difficulty"] = "Easy",
+        },
     },
 
     --============= AUTO UPGRADE CONFIG =============--
