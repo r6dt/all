@@ -187,6 +187,23 @@ getgenv().Config = {
         },
     },
 
+    --============= DUNGEON ITEM FINDER CONFIG =============--
+    Dungeon_Finder_Configuration = { -- Find Dungeon Items Auto Replay, Auto Start If Not Own Items
+        ["Tower"] = { -- Sea 1
+            ["Abyssal Empress"] = false,
+            ["Primordial Rune"] = false,
+            ["Radiant Rune"] = false,
+        },
+        ["Crystal"] = { -- Sea 2
+            ["Anti Magic"] = false,
+            ["CrystalDamageRelic"] = false,
+            ["CrystalLuckRelic"] = false,
+        },
+        ["Raid"] = { -- Sea 2
+            ["Dual Wielder"] = false,
+        },
+    },
+
     --============= AUTO UPGRADE CONFIG =============--
     Auto_Upgrade_BossRush = { -- Upgrade boss rush stats when maxed its stop
         ["Enable"] = false, -- Need to enable this to use below features
