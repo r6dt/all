@@ -159,7 +159,7 @@ getgenv().Config = {
             ["Build"] = "Damage",
             ["MainTool"] = "Ice Queen",
             ["WhiteList_Abilities"] = {4,3,2},
-            ["AutoReplay"] = true,
+            ["AutoReplay"] = false,
             ["Difficulty"] = "Easy",
         },
         ["Tower"] = {
@@ -168,21 +168,21 @@ getgenv().Config = {
             ["MainTool"] = "Ice Queen",
             ["WhiteList_Abilities"] = {3,2},
             ["Limit_Floor"] = 60,
-            ["AutoReplay"] = true,
+            ["AutoReplay"] = false,
         },
         ["Crystal"] = {
             ["Enable"] = false,
             ["Build"] = "Damage",
             ["MainTool"] = "Ice Queen",
             ["WhiteList_Abilities"] = {3,2},
-            ["AutoReplay"] = true,
+            ["AutoReplay"] = false,
         },
         ["Raid"] = {
             ["Enable"] = false,
             ["Build"] = "Damage",
             ["MainTool"] = "Ice Queen",
             ["WhiteList_Abilities"] = {3,2},
-            ["AutoReplay"] = true,
+            ["AutoReplay"] = false,
             ["Difficulty"] = "Easy",
         },
     },
@@ -206,7 +206,7 @@ getgenv().Config = {
 
     --============= AUTO UPGRADE CONFIG =============--
     Auto_Upgrade_BossRush = { -- Upgrade boss rush stats when maxed its stop
-        ["Enable"] = true, -- Need to enable this to use below features
+        ["Enable"] = false, -- Need to enable this to use below features
         ["Stats"] = {
             ["Luck"] = true,
             ["Damage"] = true,
@@ -216,7 +216,7 @@ getgenv().Config = {
         }
     },
     Auto_Upgrade_Tower = { -- Upgrade tower stats when maxed its stop
-        ["Enable"] = true, -- Need to enable this to use below features
+        ["Enable"] = false, -- Need to enable this to use below features
         ["Stats"] = {
             ["Luck"] = true,
             ["Damage"] = true,
@@ -226,7 +226,7 @@ getgenv().Config = {
         }
     },
     Auto_Upgrade_Crystal = { -- Upgrade crystal stats when maxed its stop (Only Work in Sea 2)
-        ["Enable"] = true, -- Need to enable this to use below features
+        ["Enable"] = false, -- Need to enable this to use below features
         ["Stats"] = {
             ["Luck"] = true,
             ["Damage"] = true,
