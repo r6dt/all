@@ -190,9 +190,9 @@ getgenv().Config = {
     --============= DUNGEON ITEM FINDER CONFIG =============--
     Dungeon_Finder_Configuration = { -- Find Dungeon Items Auto Replay, Auto Start If Not Own Items
         ["Tower"] = { -- Sea 1
-            ["Abyssal Empress"] = true,
-            ["Primordial Rune"] = true,
-            ["Radiant Rune"] = true,
+            ["Abyssal Empress"] = false,
+            ["Primordial Rune"] = false,
+            ["Radiant Rune"] = false,
         },
         ["Crystal"] = { -- Sea 2
             ["Anti Magic"] = false,
