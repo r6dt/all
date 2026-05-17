@@ -167,7 +167,7 @@ getgenv().Config = {
             ["Build"] = "Damage",
             ["MainTool"] = "Ice Queen",
             ["WhiteList_Abilities"] = {4,3,2},
-            ["Limit_Floor"] = 100,
+            ["Limit_Floor"] = 60,
             ["AutoReplay"] = false,
         },
         ["Crystal"] = {
