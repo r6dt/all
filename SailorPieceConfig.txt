@@ -1,7 +1,7 @@
 getgenv().Config = {
 
     --=============== World Configuration ===============--
-    World = "Sea2", -- World to play, set to "Sea1" or "Sea2"
+    World = "Sea1", -- World to play, set to "Sea1" or "Sea2"
 
     --=============== BUILD CONFIG ==============--
     Build = {
@@ -190,14 +190,14 @@ getgenv().Config = {
     --============= DUNGEON ITEM FINDER CONFIG =============--
     Dungeon_Finder_Configuration = { -- Find Dungeon Items Auto Replay, Auto Start If Not Own Items
         ["Tower"] = { -- Sea 1
-            ["Abyssal Empress"] = false,
-            ["Primordial Rune"] = false,
-            ["Radiant Rune"] = false,
+            ["Abyssal Empress"] = true,
+            ["Primordial Rune"] = true,
+            ["Radiant Rune"] = true,
         },
         ["Crystal"] = { -- Sea 2
-            ["Anti Magic"] = false,
-            ["CrystalDamageRelic"] = false,
-            ["CrystalLuckRelic"] = false,
+            ["Anti Magic"] = true,
+            ["CrystalDamageRelic"] = true,
+            ["CrystalLuckRelic"] = true,
         },
         ["Raid"] = { -- Sea 2
             ["Dual Wielder"] = false,
@@ -243,7 +243,7 @@ getgenv().Config = {
             ["BossLuck"] = true,
         }
     },
-    Max_Rune_Level = false, -- Auto Upgrade Rune to max level
+    Max_Rune_Level = true, -- Auto Upgrade Rune to max level
 
     --============= ITEM USING CONFIG =============--
     Advanced_Item_Config = {
