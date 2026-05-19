@@ -73,8 +73,8 @@ getgenv().Config = {
     },
     Auto_E10_Accessory = {
         ["Enable"] = true, -- Need to enable this to use below features
-        ["Boss"] = "TheWorldBoss", -- Boss to farm accessory
-        ["Accessory"] = "World Outfit", -- Target Accessory to enchant
+        ["Boss"] = "BlackReaperBoss", -- Boss to farm accessory
+        ["Accessory"] = "Ghoul Outfit", -- Target Accessory to enchant
     },
 
     --============= MULTI-ISLAND FARM CONFIG =============--
@@ -86,7 +86,7 @@ getgenv().Config = {
 
     --============= ADVANCED WORLD BOSS CONFIG =============--
     WorldBoss_Configuration = {
-        ["Enable"] = true, -- Need to enable this to use below features
+        ["Enable"] = false, -- Need to enable this to use below features
         ["MainTool"] = "Auto", -- Tool to use for farming world boss
         ["WhiteList_Abilities"] = {3,2}, -- Only use these abilities
     },
