@@ -6,11 +6,11 @@ getgenv().Configs = {
         ['Enabled'] = true,
         ['Prestige Stop At'] = 5,
         ['Gold Requirement'] = {
-            ['Prestige 1'] = 50000000,
-            ['Prestige 2'] = 100000000,
-            ['Prestige 3'] = 150000000,
-            ['Prestige 4'] = 200000000,
-            ['Prestige 5'] = 400000000,
+            ['Prestige 1'] = 35000000,
+            ['Prestige 2'] = 80000000,
+            ['Prestige 3'] = 260000000,
+            ['Prestige 4'] = 350000000,
+            ['Prestige 5'] = 430000000,
         }
     },
     ['Farm Slot'] = 'A',
