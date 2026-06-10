@@ -10,7 +10,7 @@ getgenv().Configs = {
             ['Prestige 2'] = 60000000,
             ['Prestige 3'] = 200000000,
             ['Prestige 4'] = 300000000,
-            ['Prestige 5'] = 300000000,
+            ['Prestige 5'] = 400000000,
         }
     },
     ['Farm Slot'] = 'A',
