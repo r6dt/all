@@ -46,11 +46,11 @@ getgenv().HB_Config = getgenv().HB_Config_External or {
 
     -- ตั้งค่าแยกแต่ละจุติ (Boost ที่เลือก + เงินขั้นต่ำก่อนจุติ หน่วยล้าน)
     PrestigeSettings = {
-        P1 = { Boost = "Gold Boost", Gold = 50 },
-        P2 = { Boost = "Gold Boost", Gold = 100 },
-        P3 = { Boost = "Gold Boost", Gold = 150 },
-        P4 = { Boost = "Gold Boost", Gold = 200 },
-        P5 = { Boost = "Gold Boost", Gold = 300 },
+        P1 = { Boost = "Gold Boost", Gold = 0 },
+        P2 = { Boost = "Gold Boost", Gold = 0 },
+        P3 = { Boost = "Gold Boost", Gold = 0 },
+        P4 = { Boost = "Gold Boost", Gold = 300 },
+        P5 = { Boost = "Gold Boost", Gold = 500 },
 
     },
 
@@ -77,7 +77,7 @@ getgenv().HB_Config = getgenv().HB_Config_External or {
     -- Boost
     BoostTypes = {"Gold"},
     -- ซื้อ EXP Boost เพิ่มตอน Prestige <= ค่านี้ (เร่งเลเวลฟาร์มจุติช่วงต้น) — สูงกว่านี้ซื้อแค่ Gold
-    BoostExpUntilPrestige = 5,
+    BoostExpUntilPrestige = 3,
 
 
 
