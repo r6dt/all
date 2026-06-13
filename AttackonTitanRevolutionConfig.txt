@@ -77,7 +77,7 @@ getgenv().HB_Config = getgenv().HB_Config_External or {
     -- Boost
     BoostTypes = {"Gold"},
     -- ซื้อ EXP Boost เพิ่มตอน Prestige <= ค่านี้ (เร่งเลเวลฟาร์มจุติช่วงต้น) — สูงกว่านี้ซื้อแค่ Gold
-    BoostExpUntilPrestige = 3,
+    BoostExpUntilPrestige = 5,
 
 
 
