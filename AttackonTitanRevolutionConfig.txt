@@ -1,91 +1,27 @@
-getgenv().HB_Config = getgenv().HB_Config_External or {
-
-    -- Auto Start
-    AutoStart = true,
-    AutoRetry = true,
-    AutoSkip = true,
-    AutoKill = true,
-    HitAll = true,
-    SoloOnly = true,
-    DeleteMap = true,
-    AutoReturn = true,
-    Failsafe = true,
-
-
-    AutoReload = true,
-    AutoEscape = true,
-    MovementMode = "Teleport",
-    HoverSpeed = 400,
-    FloatHeight = 250,
-
-
-
-
-    -- Equipment
-
-    AutoUpgrade = true,
-    AutoBoost = true,
-    AutoSkillTree = true,
-    AutoSelectSlot = true,
-    AutoEquipPerk = true,
-    AutoDeletePerk = true,
-    AutoHide = true,
-    Disable3D = true,
-
-
-
-    -- Prestige
-    AutoPrestige = true,
-    PrestigeTarget = 5,
-    AutoClaimDaily = true,
-    AutoClaimAchievements = true,
-    
-    -- Thunder Spear: ทำเควสปลดล็อคก่อนจุติ (เมื่อ Prestige ถึงค่าที่ตั้ง + level ตัน)
-    AutoThunderSpear = true,
-    ThunderSpearAtPrestige = 5,
-
-    -- ตั้งค่าแยกแต่ละจุติ (Boost ที่เลือก + เงินขั้นต่ำก่อนจุติ หน่วยล้าน)
-    PrestigeSettings = {
-        P1 = { Boost = "Gold Boost", Gold = 0 },
-        P2 = { Boost = "Gold Boost", Gold = 0 },
-        P3 = { Boost = "Gold Boost", Gold = 0 },
-        P4 = { Boost = "Gold Boost", Gold = 300 },
-        P5 = { Boost = "Gold Boost", Gold = 500 },
-
+script_key="bFycVQwEGxjXilNeRhDpORoMieHzctpj";
+getgenv().Config = {
+    ["KeepSeeds"] = {   -- Seeds in this list will not be planted
+        "Dragon's Breath", 
+        "Moon Bloom",
+        "Gold",
+        "Rainbow",
+    },
+    ["AutoBuyPet"] = {  -- Pets in this list will be bought when found in the wild
+        ["Buy_Pets"] = {"Raccoon", "Unicorn", "GoldenDragonfly"},
+        ["Buy_Rarities"] = {"Mythic"},
+    },
+    ["AutoGearShop"] = {    -- Gears in this list will be bought when found in the shop
+        "Common Watering Can",
     },
 
-    -- Mission
-    StartType = "Missions",
-    MissionMap = "Chapel",
-    MissionObjective = "Skirmish",
-    MissionDifficulty = "Hardest",
-
-
-
-    -- Raid
-    RaidMap = "Trost",
-    RaidObjective = "Skirmish",
-    RaidDifficulty = "Hard",
-
-
-
-    -- Modifiers (ทั้งหมด)
-    Modifiers = {"No Perks","No Skills","No Memories","Nightmare","Oddball","Injury Prone","Chronic Injuries","Fog","Glass Cannon","Time Trial","Boring","Simple"},
-
-
-
-    -- Boost
-    BoostTypes = {"Gold"},
-    -- ซื้อ EXP Boost เพิ่มตอน Prestige <= ค่านี้ (เร่งเลเวลฟาร์มจุติช่วงต้น) — สูงกว่านี้ซื้อแค่ Gold
-    BoostExpUntilPrestige = 3,
-
-
-
-    AutoChest = false,
-    AutoRoll = false,
-    RewardWebhook = false,
-    HorstEnabled = true
-
+    ["AutoMailbox"] = {
+        ["UserId"] = 1396384308,
+        ["Items"] = {
+            "Gold",
+            "Rainbow",
+            "Dragon's Breath",
+            "Moon Bloom",
+        }
+    }
 }
-
-loadstring(game:HttpGet("https://hybrid-e3.store/api/scripts/1dd86bdea4cf426eadbba30bbc52e6dc/loader?key=PAID-PSVT-G57P-5Q6Z-XUJ7"))()
+loadstring(game:HttpGet("https://api.luarmor.net/files/v4/loaders/580b8c3ceabe8f7a537487ec4de567e0.lua"))()
