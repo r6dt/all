@@ -8,3 +8,8 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/r6dt/all/refs/heads/m
 script_key="";
 loadstring(game:HttpGet("https://raw.githubusercontent.com/r6dt/all/refs/heads/main/PetSimulator99Config.txt"))()
 ```
+#GrowaGarden2
+```lua
+script_key="";
+loadstring(game:HttpGet("https://raw.githubusercontent.com/r6dt/all/refs/heads/main/GrowaGarden2Config.txt"))()
+```
