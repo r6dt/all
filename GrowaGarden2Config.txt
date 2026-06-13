@@ -51,6 +51,17 @@ getgenv().Config = {
         ["Buy_Rarities"] = {"Mythic"},
     },
 
+    -- Seeds Shop Configuration --
+    ["SeedShop"] = {
+        ["All_Seeds_Limit"] = 20,
+		["Limit_Specfic"] = {
+			["Carrot"] = 20,
+		},
+        ["Blacklist_Seeds"] = {
+            "Something",
+        }
+    },
+
     -- Gear Shop Configuration --
     ["AutoGearShop"] = {    -- Gears in this list will be bought when found in the shop
         "Common Watering Can",
@@ -59,18 +70,22 @@ getgenv().Config = {
     -- Auto Expand Plot Configuration --
     ["AutoExpand"] = {
         ["Enabled"] = true, -- Set to true to auto expand your plot when you have enough money
-        ["MaxLevel"] = 3, -- 2 - 5
+        ["MaxLevel"] = 3, -- (2 - 5)
     },
 
     -- Mailbox Configuration --
     ["AutoMailbox"] = {
         ["UserId"] = 1396384308,
+        ["MinValue"] = 5, -- (1 - 20)
         ["Items"] = {
             "Gold",
             "Rainbow",
             "Dragon's Breath",
             "Moon Bloom",
         }
-    }
+    },
+
+    -- Misc --
+    ["Plant_Underground"] = true,
 }
 loadstring(game:HttpGet("https://api.luarmor.net/files/v4/loaders/580b8c3ceabe8f7a537487ec4de567e0.lua"))()
