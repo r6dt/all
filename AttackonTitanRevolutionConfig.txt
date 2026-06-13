@@ -42,7 +42,7 @@ getgenv().HB_Config = getgenv().HB_Config_External or {
     
     -- Thunder Spear: ทำเควสปลดล็อคก่อนจุติ (เมื่อ Prestige ถึงค่าที่ตั้ง + level ตัน)
     AutoThunderSpear = true,
-    ThunderSpearAtPrestige = 3,
+    ThunderSpearAtPrestige = 4,
 
     -- ตั้งค่าแยกแต่ละจุติ (Boost ที่เลือก + เงินขั้นต่ำก่อนจุติ หน่วยล้าน)
     PrestigeSettings = {
