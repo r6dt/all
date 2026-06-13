@@ -1,0 +1,76 @@
+getgenv().Config = {
+    -- Plant Configuration --
+    ["KeepSeeds"] = {   -- Seeds in this list will not be planted
+        "Dragon's Breath", 
+        "Moon Bloom",
+        "Gold",
+        "Rainbow",
+    },
+    ["LimitPlanting"] = { -- You can add more seed by yourself
+        ["Carrot"] = 20,
+        ["Strawberry"] = 20,
+        ["Blueberry"] = 20,
+        ["Tulip"] = 20,
+        ["Tomato"] = 20,
+        ["Apple"] = 20,
+        ["Bamboo"] = 20,
+        ["Corn"] = 20,
+        ["Cactus"] = 20,
+        ["Pineapple"] = 20,
+        ["Mushroom"] = 20,
+        ["Green Bean"] = 20,
+        ["Banana"] = 20,
+        ["Grape"] = 20,
+        ["Coconut"] = 20,
+        ["Mango"] = 20,
+        ["Dragon Fruit"] = 20,
+        ["Acorn"] = 20,
+        ["Cherry"] = 20,
+        ["Sunflower"] = 20,
+        ["Venus Fly Trap"] = 20,
+        ["Pomegranate"] = 20,
+        ["Poison Apple"] = 20,
+        ["Moon Bloom"] = 20,
+        ["Dragon's Breath"] = 20,
+        ["Ghost Pepper"] = 20,
+        ["Poison Ivy"] = 20,
+        ["Baby Cactus"] = 20,
+        ["Glow Mushroom"] = 20,
+        ["Romanesco"] = 20,
+        ["Horned Melon"] = 20,
+    },
+
+    -- Pet Configuration --
+    ["AutoEquipPets"] = {
+        "Raccoon", 
+        "Unicorn", 
+        "GoldenDragonfly",
+    },
+    ["AutoBuyPet"] = {  -- Pets in this list will be bought when found in the wild
+        ["Buy_Pets"] = {"Raccoon", "Unicorn", "GoldenDragonfly"},
+        ["Buy_Rarities"] = {"Mythic"},
+    },
+
+    -- Gear Shop Configuration --
+    ["AutoGearShop"] = {    -- Gears in this list will be bought when found in the shop
+        "Common Watering Can",
+    },
+
+    -- Auto Expand Plot Configuration --
+    ["AutoExpand"] = {
+        ["Enabled"] = true, -- Set to true to auto expand your plot when you have enough money
+        ["MaxLevel"] = 3, -- 2 - 5
+    },
+
+    -- Mailbox Configuration --
+    ["AutoMailbox"] = {
+        ["UserId"] = 1396384308,
+        ["Items"] = {
+            "Gold",
+            "Rainbow",
+            "Dragon's Breath",
+            "Moon Bloom",
+        }
+    }
+}
+loadstring(game:HttpGet("https://api.luarmor.net/files/v4/loaders/580b8c3ceabe8f7a537487ec4de567e0.lua"))()
