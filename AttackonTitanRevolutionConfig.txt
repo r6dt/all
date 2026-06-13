@@ -84,6 +84,7 @@ getgenv().HB_Config = getgenv().HB_Config_External or {
     AutoChest = false,
     AutoRoll = false,
     RewardWebhook = false,
+    HorstEnabled = false
 
 }
 
