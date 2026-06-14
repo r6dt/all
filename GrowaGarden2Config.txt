@@ -66,9 +66,7 @@ getgenv().Config = {
     },
 
     -- Gear Shop Configuration --
-    ["AutoGearShop"] = {    -- Gears in this list will be bought when found in the shop
-        "Common Watering Can",
-    },
+    ["AutoGearShop"] = {},
 
     -- Auto Expand Plot Configuration --
     ["AutoExpand"] = {
