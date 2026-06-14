@@ -85,5 +85,34 @@ getgenv().Config = {
 
     -- Misc --
     ["Plant_Underground"] = true,
+
+    -- Logger --
+    ["Log"] = {
+        ["Horst"] = false, -- Log Horst
+        ["RAM"] = false, -- Log RAM
+        ["Custom"] = {
+            ["Sheckles"] = true,
+            ["Items"] = { -- Add anything
+                "Gold",
+                "Rainbow",
+                "Bunny",
+            }
+        }
+    },
+    ["Webhook"] = {
+        ["Url"] = "https://discord.com/api/webhooks/1515670484178440252/ICegkFbgp_Mt1NMO5MOZR340orblvhdqGEWVBAbb46gW4nrggyuF2A1sF5U-1bSQnz3L",
+        ["SendInterval"] = 1800, -- second
+
+        ["Custom"] = {
+            ["Username"] = true,
+            ["Uptime"] = true,
+            ["Sheckles"] = true,
+            ["Items"] = { -- Add anything
+                "Gold",
+                "Rainbow",
+                "Bunny",
+            }
+        }
+    }
 }
 loadstring(game:HttpGet("https://api.luarmor.net/files/v4/loaders/580b8c3ceabe8f7a537487ec4de567e0.lua"))()
