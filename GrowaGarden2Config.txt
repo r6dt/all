@@ -6,7 +6,7 @@ getgenv().Config = {
         "Gold",
         "Rainbow",
     },
-	["Include_Mutation"] = false,
+	["Include_Mutation"] = true,
     ["LimitPlanting"] = { -- You can add more seed by yourself
         ["Carrot"] = 20,
         ["Strawberry"] = 20,
