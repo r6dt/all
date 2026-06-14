@@ -6,6 +6,7 @@ getgenv().Config = {
         "Gold",
         "Rainbow",
     },
+	["Include_Mutation"] = false,
     ["LimitPlanting"] = { -- You can add more seed by yourself
         ["Carrot"] = 20,
         ["Strawberry"] = 20,
@@ -50,10 +51,14 @@ getgenv().Config = {
         ["Buy_Pets"] = {"Raccoon", "Unicorn", "GoldenDragonfly"},
         ["Buy_Rarities"] = {"Mythic"},
     },
+    ["LimitPets"] = { -- You can add more
+        ["Deer"] = 1,
+        ["Bunny"] = 1,
+    },
 
     -- Seeds Shop Configuration --
     ["SeedShop"] = {
-        ["All_Seeds_Limit"] = 20,
+        ["All_Seeds_Limit"] = 10,
 		["Limit_Specfic"] = {},
         ["Blacklist_Seeds"] = {
             "Something",
