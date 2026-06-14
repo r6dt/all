@@ -48,8 +48,8 @@ getgenv().Config = {
         "GoldenDragonfly",
     },
     ["AutoBuyPet"] = {  -- Pets in this list will be bought when found in the wild
-        ["Buy_Pets"] = {"Raccoon", "Unicorn", "GoldenDragonfly"},
-        ["Buy_Rarities"] = {"Mythic"},
+        ["Buy_Pets"] = {"Raccoon", "Unicorn"},
+        ["Buy_Rarities"] = {"Super", "Mythic"},
     },
     ["LimitPets"] = { -- You can add more
         ["Deer"] = 1,
