@@ -3,7 +3,6 @@ getgenv().Config = {
     ["KeepSeeds"] = {   -- Seeds in this list will not be planted
         "Dragon's Breath", 
         "Moon Bloom",
-        "Gold",
         "Rainbow",
     },
 	["Include_Mutation"] = true,
@@ -87,7 +86,7 @@ getgenv().Config = {
     },
 
     -- Misc --
-    ["Plant_Underground"] = true,
+    ["Plant_Underground"] = false,
 
     -- Logger --
     ["Log"] = {
@@ -96,7 +95,6 @@ getgenv().Config = {
         ["Custom"] = {
             ["Sheckles"] = true,
             ["Items"] = { -- Add anything
-                "Gold",
                 "Rainbow",
                 "Bunny",
             }
