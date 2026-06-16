@@ -57,7 +57,7 @@ getgenv().Config = {
 
     -- Seeds Shop Configuration --
     ["SeedShop"] = {
-        ["All_Seeds_Limit"] = 999,
+        ["All_Seeds_Limit"] = 20,
 		["Limit_Specfic"] = {},
         ["Blacklist_Seeds"] = {
             "Something",
