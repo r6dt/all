@@ -114,9 +114,6 @@ getgenv().GAG2Config = {
 
     -- Auto Mail
     AUTO_MAIL = {
-        ["Gianobagen993"] = { ["Super Watering Can"] = "All", ["Super Sprinkler"] = "All" },
-        ["Laillabau9410"] = { ["Super Watering Can"] = "All", ["Super Sprinkler"] = "All" },
-        ["Asadasiler640"] = { ["Super Watering Can"] = "All", ["Super Sprinkler"] = "All" },
         ["Organdoo4565"] = { ["Hypno Bloom"] = "All" },
     },  -- ["Username"] = { ["Item Name"] = Amount }
     COLLECT_MAIL = true,
