@@ -1,8 +1,10 @@
 getgenv().GAG2Config = {
     FPS_CAP = 7,  -- MUST USE 5+ FPS FOR TWEENING
-    AUTO_UPDATE_RESTART = true,
+    ADD_FRIEND = false,
+    AUTO_UPDATE_RESTART = false,
     COLLECT_FRUIT_DELAY = 20,
-
+    -- Pet Config
+    MAX_PET_EQUIP = 6,
     BUY_PET = {  -- ["Pet Name"] = Amount
         ["Monkey"] = 0, 
         ["Bee"] = 0, 
@@ -25,20 +27,20 @@ getgenv().GAG2Config = {
     },
 
     PLANT_SEED = {  -- ["Seed Name"] = Amount
-        ["Carrot"] = 1, 
-        ["Strawberry"] = 0,
-        ["Blueberry"] = 20,
-        ["Tulip"] = 5,
-        ["Tomato"] = 10,
-        ["Apple"] = 30,
+        ["Carrot"] = 2, 
+        ["Strawberry"] = 2,
+        ["Blueberry"] = 2,
+        ["Tulip"] = 2,
+        ["Tomato"] = 2,
+        ["Apple"] = 2,
         ["Bamboo"] = 100,
-        ["Corn"] = 0,
-        ["Cactus"] = 60,
-        ["Pineapple"] = 20,
+        ["Corn"] = 5,
+        ["Cactus"] = 5,
+        ["Pineapple"] = 5,
         ["Mushroom"] = 50,
-        ["Green Bean"] = 10,
-        ["Banana"] = 20,
-        ["Grape"] = 20,
+        ["Green Bean"] = 0,
+        ["Banana"] = 5,
+        ["Grape"] = 5,
         ["Coconut"] = 60,
         ["Mango"] = 20,
         ["Dragon Fruit"] = 50,
@@ -49,7 +51,7 @@ getgenv().GAG2Config = {
         ["Pomegranate"] = 20,
         ["Poison Apple"] = 20,
         ["Venom Spitter"] = 20,
-        -- ["Moon Bloom"] = 20,
+        ["Moon Bloom"] = 100,
         -- ["Dragon's Breath"] = 20,
         -- ["Hypno Bloom"] = 20,
         ["Gold"] = 99,
@@ -57,65 +59,74 @@ getgenv().GAG2Config = {
     },
 
     BUY_SEED = {  -- ["Seed Name"] = Amount
+        ["Rocket Pop"] = 9999,
         ["Carrot"] = 5, 
-        ["Strawberry"] = 5,
-        ["Blueberry"] = 5,
-        ["Tulip"] = 999,
-        ["Tomato"] = 5,
-        ["Apple"] = 5,
+        ["Strawberry"] = 0,
+        ["Blueberry"] = 0,
+        ["Tulip"] = 0,
+        ["Tomato"] = 0,
+        ["Apple"] = 0,
         ["Bamboo"] = 9999,
-        ["Corn"] = 5,
-        ["Cactus"] = 5,
-        ["Pineapple"] = 5,
+        ["Corn"] = 0,
+        ["Cactus"] = 0,
+        ["Pineapple"] = 0,
         ["Mushroom"] = 9999,
         ["Green Bean"] = 0,
-        ["Banana"] = 5,
-        ["Grape"] = 5,
-        ["Coconut"] = 5,
-        ["Mango"] = 5,
-        ["Dragon Fruit"] = 5,
-        ["Acorn"] = 5,
-        ["Cherry"] = 5,
-        ["Sunflower"] = 5,
-        ["Venus Fly Trap"] = 5,
-        ["Pomegranate"] = 5,
-        ["Poison Apple"] = 5,
-        ["Venom Spitter"] = 5,
-        ["Moon Bloom"] = 5,
+        ["Banana"] = 0,
+        ["Grape"] = 0,
+        ["Coconut"] = 0,
+        ["Mango"] = 0,
+        ["Dragon Fruit"] = 0,
+        ["Acorn"] = 0,
+        ["Cherry"] = 0,
+        ["Sunflower"] = 0,
+        ["Fire Fern"] = 0,
+        ["Venus Fly Trap"] = 0,
+        ["Pomegranate"] = 0,
+        ["Poison Apple"] = 0,
+        ["Venom Spitter"] = 0,
+        ["Moon Bloom"] = 9999,
         ["Hypno Bloom"] = 9999,
         ["Dragon's Breath"] = 9999,
     },
-
-    SELL_FRUIT_MULTIPLIER = { ["Bamboo"] = 1, ["Mushroom"] = 1.5 }, 
-    COLLECT_PLANT_IF_MUTATED = { "Bamboo", "Mushroom" },  -- Only collect fruit when have ANY mutation
-    FAVOURITE_FRUIT = {},  -- ["Fruit Name"] = {} ... or ... ["Fruit Name"] = { "Gold", "Rainbow" }
-    SELL_ALL_DAILY_DEAL = true,
-    SELL_ALL_DELAY = 20,    
-
-    FOCUS_COLLECT_DROPPED_SEED = false,  -- set true if public server (instant collect), false for slightly slower collect
-    MAX_PET_EQUIP = 6,
+    BUY_AUCTION = {
+        ["Moon Bloom"] = { 200000000, 999 },
+        ["Dragon's Breath"] = { 250000000, 999 },
+    },  -- ["Item Name"] = { Max Sheckle Price, Buy Until Amount }
+    BUY_CRATE = {},  -- ["Crate Name"] = Buy Until Amount
     BUY_GEAR_MIN_SHECKLE = 1000000, 
-    EXPAND_PLOT = 3,  -- 0 = No expand, 3 = expand plot 3 times
+    BUY_GEAR = {  -- ["Gear Name"] = Buy Until Amount
+        ["Common Sprinkler"] = 9999,
+        ["Uncommon Sprinkler"] = 9999,
+        ["Rare Sprinkler"] = 9999,
+        ["Super Sprinkler"] = 9999,
+        ["Super Watering Can"] = 9999,
+        ["Common Watering Can"] = 9999,
+    }, 
+    
+    -- Sell Config
+    SELL_FRUIT_MULTIPLIER = {},
+    SELL_ALL_DAILY_DEAL = 100000000,  -- Min "daily sell all" value
+    SELL_ALL_DELAY = 10,  -- Seconds  
+
+    -- Consumable Config
     USE_SPRINKLER = {
         "Common Sprinkler",
         "Uncommon Sprinkler",
         "Rare Sprinkler",
     },
+    USE_WATERING_CAN = { "Common Watering Can" },  -- "Watering Can Name" 
+    USE_WATERING_CAN_DELAY = 60,  -- Seconds
 
-    BUY_GEAR = {
-        ["Common Watering Can"] = 100,
-        ["Super Watering Can"] = 999,
-        ["Common Sprinkler"] = 999,
-        ["Uncommon Sprinkler"] = 999,
-        ["Rare Sprinkler"] = 999,
-        ["Super Sprinkler"] = 999,
-    },  
-    BUY_CRATE = {},  -- ["Crate Name"] = Amount
+    -- Misc Config
+    COLLECT_PLANT_IF_MUTATED = { "Bamboo", "Mushroom"},
+    FAVOURITE_FRUIT = {},  -- ["Fruit Name"] = {} ... or ... ["Fruit Name"] = { "Gold", "Rainbow" }
+    FOCUS_COLLECT_DROPPED_SEED = false,  -- set true if public server (instant collect), false for slightly slower collect
+    EXPAND_PLOT = 3,  -- 0 = No expand, 3 = expand plot 3 times
 
     -- Auto Mail
-    AUTO_MAIL = {
-        ["Organdoo4565"] = { ["Hypno Bloom"] = "All" },
-    },  -- ["Username"] = { ["Item Name"] = Amount }
+    AUTO_MAIL = {},  -- ["Username"] = { ["Item Name"] = Amount }
+    AUTO_MAIL_DELAY = 60,  -- Seconds
     COLLECT_MAIL = true,
 
     -- Discord
