@@ -1,9 +1,10 @@
+setfpscap(5)
+script_key = "tJdrDPwHpKoMXopYiqXkKUmZIQHhmrCA";
 getgenv().UserConfig = {
     -- Auto Hop
-    ["Enable Auto Hop"] = true,
+    ["Enable Auto Hop"] = false,
     ["Min Coin Hop Threshold"] = 250,
     ["Coin Check Interval"] = 1800,
-
     -- Auto Change
     ["Auto Change"] = {
         ["Level"] = 10,
@@ -29,13 +30,11 @@ getgenv().UserConfig = {
             ["Option"] = 1,
         }
     },
-
     -- Auto Unbox Settings
     ["Auto Unbox"] = true,
-    ["Selected Box"] = "Summer2026Box",
+    ["Selected Box"] = { "Summer2026Box", "KnifeBox4" },
     ["Currency Type"] = "Shells",
     ["Min Balance Keep"] = 1,
-
     -- Webhook Settings
     ["Webhook URL"] = "https://discord.com/api/webhooks/1531676272982233172/PAaSuQSyYgufDTEGx4kJ0R7Q4rlcxFDj6OMoXN3HMdlt-DUKQ5nJEUiBIuPPrS-s5g6o",
     ["Discord ID"] = "1167566243969126442",
