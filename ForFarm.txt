@@ -2,7 +2,7 @@ setfpscap(5)
 script_key = "tJdrDPwHpKoMXopYiqXkKUmZIQHhmrCA";
 getgenv().UserConfig = {
     -- Auto Hop
-    ["Enable Auto Hop"] = false,
+    ["Enable Auto Hop"] = true,
     ["Min Coin Hop Threshold"] = 250,
     ["Coin Check Interval"] = 1800,
     -- Auto Change
