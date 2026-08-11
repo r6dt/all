@@ -36,7 +36,7 @@ getgenv().GINVENTORY_COUNTS = {
 }
 --getgenv().GFIND_REMOTES = true
 getgenv().GWEBHOOK_USERID = ""
-getgenv().GWEBHOOK_LINK = ""
+getgenv().GWEBHOOK_LINK = "https://discord.com/api/webhooks/1536802339984384100/Uw2yIZJl2ga44Ff8MPgLy-zB1mDpVz1BGZb9gSdGaMmVuOKHEsW5SNOVihNX_KYTD82w"
 getgenv().GHUGE_COUNT = 0 -- amount of huges to keep/not mail
 getgenv().GMAIL_RECEIVERS = {"your-receiver-mule"}
 getgenv().GMAIL_ITEMS = {
