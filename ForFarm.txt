@@ -20,6 +20,11 @@ getgenv().GINVENTORY_COUNTS = {
     ["Fiesta Orbs"] = {Class = "Currency", Id = "FiestaOrbs"},
     ["Fiesta Gift"] = {Class = "Lootbox", Id = "Fiesta Gift"},
 }
+getgenv().GTIMED_BOOSTS = 
+{
+    { Id = "Fiesta Maze Damage Booster", MaxTier = 1 }, --Max is Tier 2
+    --{ Id = "Fiesta Maze XP Booster", MaxTier = 1 }, -- Max is Tier 2
+}
 getgenv().GENCHANTS = {
     "Lucky Eggs", "Lucky Eggs", "Lucky Eggs", "Lucky Eggs",
     "Lucky Eggs", "Lucky Eggs", "Lucky Eggs", "Lucky Eggs",
