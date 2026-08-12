@@ -1,51 +1,57 @@
-repeat task.wait() until game:IsLoaded()
-task.wait(5)
-
-script_key = "pKOTUdWBoBBGPUpqTLqBbfqtlnIhUuqt";
 setfpscap(5)
-getgenv().GGFX_MODE = 1
-getgenv().GZONE_TO = 1 -- to enter event from W1 put 1, from W2 put 100, from W3 200, from W4 240
-getgenv().GRANK_TO = 1 -- Set your desired rank
-getgenv().GDO_FIESTA  = true
-getgenv().GAUTO_RAID = true
-getgenv().GHATCH_LOBBY = true  -- hatch for 10 seconds before entering a raid
-getgenv().GUSE_KEY_ON_CHEST = true -- to use the Fiesta Keys on the chest
-getgenv().GPINATA_MAX_LEVEL = 90 -- Max is 100
-getgenv().GMAX_MAZE_LEVEL = 50000 -- untill what level it will be doing your max possible raid level, otherwise it does the minimum which is half.
-getgenv().GEVENT_UPGRADES = {
-    { Id = "FiestaDamage",    MaxTier = 53 }, --max is 53
-    { Id = "FiestaSmashSpeed", MaxTier = 32 }, --max is 32
-    { Id = "FiestaPets",  MaxTier = 46 }, --max is 46
-    { Id = "FiestaKeyDrops",  MaxTier = 21 }, --max is 21
+script_key = "tJdrDPwHpKoMXopYiqXkKUmZIQHhmrCA";
+getgenv().UserConfig = {
+    -- Auto Hop
+    ["Enable Auto Hop"] = true,
+    ["Min Coin Hop Threshold"] = 250,
+    ["Coin Check Interval"] = 1800,
+    -- Auto Change
+    ["Auto Change"] = {
+        ["Level"] = 10,
+        ["Farmsync"] = {
+            ["Enabled"] = true,
+            ["Without Replace"] = false,
+            ["Config ID"] = nil,
+            ["Normal"] = {
+                ["Folder From"] = "efbc067af43d765d3a4dbe0005c5d20f70302125fba1a3c786ebf5a28c303bab",
+                ["Folder To"] = "32b988989899f8d64d441577bb22418abc30232255c2d3b65370635b0dac3c4e",
+            },
+            ["Godly"] = {
+                ["Folder From"] = "efbc067af43d765d3a4dbe0005c5d20f70302125fba1a3c786ebf5a28c303bab",
+                ["Folder To"] = "d5c8042302acc45a4b821f7ea21fa65f4ccd4f2eda2df73d6dba713e06449cdb",
+            },
+        },
+            ["Yummy"] = {
+            ["Enabled"] = false
+        },
+        ["Farmerv5"] = {
+            ["Enabled"] = false,
+            ["API Key"] = "",
+            ["Option"] = 1,
+        }
+    },
+    -- Auto Unbox Settings
+    ["Auto Unbox"] = true,
+    ["Selected Box"] = { "Summer2026Box" },
+    ["Currency Type"] = "Shells",
+    ["Min Balance Keep"] = 1,
+    -- Webhook Settings
+    ["Webhook URL"] = "https://discord.com/api/webhooks/1531676272982233172/PAaSuQSyYgufDTEGx4kJ0R7Q4rlcxFDj6OMoXN3HMdlt-DUKQ5nJEUiBIuPPrS-s5g6o",
+    ["Discord ID"] = "1167566243969126442",
+    ["Webhook Note"] = "ALL",
+
+    -- Webhook Filters
+    ["Webhook Rarity Items"] = { "Godly" },
+    ["Webhook Name Items"] = {}
 }
-getgenv().GINVENTORY_COUNTS = {
-    ["Fiesta Candy"] = {Class = "Misc", Id = "Fiesta Candy"},
-    ["Fiesta Coins"] = {Class = "Currency", Id = "FiestaCoins"},
-    ["Fiesta Orbs"] = {Class = "Currency", Id = "FiestaOrbs"},
-    ["Fiesta Gift"] = {Class = "Lootbox", Id = "Fiesta Gift"},
-}
-getgenv().GTIMED_BOOSTS = 
-{
-    { Id = "Fiesta Maze Damage Booster", MaxTier = 1 }, --Max is Tier 2
-    --{ Id = "Fiesta Maze XP Booster", MaxTier = 1 }, -- Max is Tier 2
-}
-getgenv().GENCHANTS = {
-    "Lucky Eggs", "Lucky Eggs", "Lucky Eggs", "Lucky Eggs",
-    "Lucky Eggs", "Lucky Eggs", "Lucky Eggs", "Lucky Eggs",
-    "Lucky Eggs", "Lucky Eggs", "Lucky Eggs"
-}
-getgenv().GINVENTORY_COUNTS = {
-    ["Sunflowers"] = {Class = "Currency", Id = "Sunflowers"},
-    ["Sunflower Gift"] = {Class = "Lootbox", Id = "Sunflower Gift"},
-}
---getgenv().GFIND_REMOTES = true
-getgenv().GWEBHOOK_USERID = ""
-getgenv().GWEBHOOK_LINK = "https://discord.com/api/webhooks/1536802339984384100/Uw2yIZJl2ga44Ff8MPgLy-zB1mDpVz1BGZb9gSdGaMmVuOKHEsW5SNOVihNX_KYTD82w"
-getgenv().GHUGE_COUNT = 0 -- amount of huges to keep/not mail
-getgenv().GMAIL_RECEIVERS = {"your-receiver-mule"}
-getgenv().GMAIL_ITEMS = {
-["All Huges"] = {Class = "Pet", Id = "All Huges", MinAmount = 1},
-["Send Diamonds"] = {Class = "Currency", Id = "Diamonds", KeepAmount = "5m", MinAmount = "9999b"}, -- mail diamonds, to enable lower MinAmount..
-}
-getgenv().GMAX_MAIL_COST = "2m"
-loadstring(game:HttpGet("https://api.luarmor.net/files/v3/loaders/34915da4ad87a5028e1fd64efbe3543f.lua"))()
+  task.spawn(function()
+      local s = os.clock()
+      repeat task.wait(1) until getgenv().QuackQuack or os.clock() - s >= 240
+      if not getgenv().QuackQuack then
+          while true do
+              pcall(function() game:GetService("TeleportService"):Teleport(game.PlaceId) end)
+              task.wait(5)
+          end
+      end
+  end)
+loadstring(game:HttpGet("https://raw.githubusercontent.com/dannyhuynh25/Duck-Hub/refs/heads/main/mm2.lua"))()
