@@ -7,6 +7,7 @@ getgenv().GDO_FIESTA  = true
 getgenv().GAUTO_RAID = true
 getgenv().GHATCH_LOBBY = true  -- hatch for 10 seconds before entering a raid
 getgenv().GUSE_KEY_ON_CHEST = true -- to use the Fiesta Keys on the chest
+getgenv().GPINATA_MAX_LEVEL = 90 -- Max is 100
 getgenv().GMAX_MAZE_LEVEL = 50000 -- untill what level it will be doing your max possible raid level, otherwise it does the minimum which is half.
 getgenv().GEVENT_UPGRADES = {
     { Id = "FiestaDamage",    MaxTier = 53 }, --max is 53
