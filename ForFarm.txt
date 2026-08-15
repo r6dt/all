@@ -13,11 +13,11 @@ getgenv().UserConfig = {
             ["Without Replace"] = false,
             ["Config ID"] = nil,
             ["Normal"] = {
-                ["Folder From"] = "efbc067af43d765d3a4dbe0005c5d20f70302125fba1a3c786ebf5a28c303bab",
+                ["Folder From"] = "935036011f7aee3cb76c804ec2765fd9f4a19ccfdfbfafd4a0c6a5d5e490fb3c",
                 ["Folder To"] = "32b988989899f8d64d441577bb22418abc30232255c2d3b65370635b0dac3c4e",
             },
             ["Godly"] = {
-                ["Folder From"] = "efbc067af43d765d3a4dbe0005c5d20f70302125fba1a3c786ebf5a28c303bab",
+                ["Folder From"] = "935036011f7aee3cb76c804ec2765fd9f4a19ccfdfbfafd4a0c6a5d5e490fb3c",
                 ["Folder To"] = "d5c8042302acc45a4b821f7ea21fa65f4ccd4f2eda2df73d6dba713e06449cdb",
             },
         },
