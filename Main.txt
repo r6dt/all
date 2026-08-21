@@ -1,6 +1,8 @@
 print("[Loader] เริ่มทำงาน")
 
-local function runScript(name, url)
+local function loadScript(name, url)
+    print("[Loader] กำลังโหลด " .. name .. "...")
+
     local success, result = pcall(function()
         local source = game:HttpGet(url)
 
@@ -19,9 +21,10 @@ local function runScript(name, url)
 
     if not success then
         warn("[Loader] " .. name .. " โหลดไม่สำเร็จ:", result)
-        return false
+        return nil
     end
 
+    print("[Loader] " .. name .. " โหลดสำเร็จ")
     return result
 end
 
@@ -29,32 +32,42 @@ end
 -- Anti-AFK
 -- ==================================================
 
-if not getgenv().AntiAFKLoaded then
+if getgenv().AntiAFKStarted then
 
-    print("[Loader] กำลังโหลด Anti-AFK...")
+    print("[Loader] Anti-AFK ทำงานอยู่แล้ว -> ข้าม")
 
-    local AntiAFK = runScript(
-        "Anti-AFK",
-        "https://raw.githubusercontent.com/r6dt/all/refs/heads/main/antiafk.txt"
-    )
+else
 
-    if not AntiAFK then
-        warn("[Loader] Anti-AFK โหลดไม่สำเร็จ -> หยุด")
-        return
+    if not getgenv().AntiAFKLoaded then
+
+        local AntiAFK = loadScript(
+            "Anti-AFK",
+            "https://raw.githubusercontent.com/r6dt/all/refs/heads/main/antiafk.txt"
+        )
+
+        if not AntiAFK then
+            warn("[Loader] Anti-AFK โหลดไม่ได้ -> หยุด")
+            return
+        end
+
+        getgenv().AntiAFKLoaded = true
+
+        task.spawn(function()
+            local success, err = pcall(AntiAFK)
+
+            if not success then
+                warn("[AntiAFK] ERROR:", err)
+                getgenv().AntiAFKLoaded = nil
+                getgenv().AntiAFKStarted = nil
+            end
+        end)
+
+    else
+        print("[Loader] Anti-AFK กำลังเริ่มทำงาน...")
     end
 
-    task.spawn(function()
-        local success, err = pcall(AntiAFK)
-
-        if not success then
-            warn("[AntiAFK] ERROR:", err)
-            getgenv().AntiAFKLoaded = nil
-            getgenv().AntiAFKStarted = nil
-        end
-    end)
-
-    -- รอให้ Anti-AFK แจ้งว่าเริ่มทำงาน
-    print("[Loader] รอ Anti-AFK เริ่มทำงาน...")
+    -- รอ Anti-AFK แจ้งว่าเริ่มทำงานจริง
+    print("[Loader] กำลังตรวจสอบ Anti-AFK...")
 
     local timeout = 15
     local elapsed = 0
@@ -65,23 +78,12 @@ if not getgenv().AntiAFKLoaded then
     end
 
     if not getgenv().AntiAFKStarted then
-        warn(
-            "[Loader] Anti-AFK ไม่ได้เริ่มทำงานภายใน "
-            .. timeout
-            .. " วินาที -> ไม่รัน ForFarm"
-        )
-
-        getgenv().AntiAFKLoaded = nil
+        warn("[Loader] Anti-AFK ไม่เริ่มทำงานภายใน 15 วินาที")
+        warn("[Loader] ยกเลิกการรัน ForFarm")
         return
     end
 
-    getgenv().AntiAFKLoaded = true
-
     print("[Loader] Anti-AFK เริ่มทำงานสำเร็จ!")
-
-else
-
-    print("[Loader] Anti-AFK รันอยู่แล้ว -> ข้าม")
 
 end
 
@@ -89,47 +91,41 @@ end
 -- รอ 5 วินาที
 -- ==================================================
 
-print("[Loader] Anti-AFK OK")
 print("[Loader] รอ 5 วินาทีก่อนรัน ForFarm...")
-
 task.wait(5)
 
 -- ==================================================
 -- ForFarm
 -- ==================================================
 
-if not getgenv().ForFarmLoaded then
+if getgenv().ForFarmLoaded then
 
-    print("[Loader] กำลังโหลด ForFarm...")
+    print("[Loader] ForFarm รันอยู่แล้ว -> ข้าม")
 
-    local ForFarm = runScript(
+else
+
+    local ForFarm = loadScript(
         "ForFarm",
         "https://raw.githubusercontent.com/r6dt/all/refs/heads/main/ForFarm.txt"
     )
 
     if not ForFarm then
-        warn("[Loader] ForFarm โหลดไม่สำเร็จ")
+        warn("[Loader] ForFarm โหลดไม่ได้")
         return
     end
 
-    task.spawn(function()
+    getgenv().ForFarmLoaded = true
 
+    task.spawn(function()
         local success, err = pcall(ForFarm)
 
         if not success then
             warn("[ForFarm] ERROR:", err)
             getgenv().ForFarmLoaded = nil
         end
-
     end)
 
-    getgenv().ForFarmLoaded = true
-
     print("[Loader] ForFarm เริ่มทำงานแล้ว!")
-
-else
-
-    print("[Loader] ForFarm รันอยู่แล้ว -> ข้าม")
 
 end
 
