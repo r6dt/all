@@ -1,0 +1,138 @@
+print("[Loader] เริ่มทำงาน")
+
+local function runScript(name, url)
+    local success, result = pcall(function()
+        local source = game:HttpGet(url)
+
+        if not source or source == "" then
+            error("โหลดไฟล์ว่าง")
+        end
+
+        local func, compileError = loadstring(source)
+
+        if not func then
+            error(compileError)
+        end
+
+        return func
+    end)
+
+    if not success then
+        warn("[Loader] " .. name .. " โหลดไม่สำเร็จ:", result)
+        return false
+    end
+
+    return result
+end
+
+-- ==================================================
+-- Anti-AFK
+-- ==================================================
+
+if not getgenv().AntiAFKLoaded then
+
+    print("[Loader] กำลังโหลด Anti-AFK...")
+
+    local AntiAFK = runScript(
+        "Anti-AFK",
+        "https://raw.githubusercontent.com/r6dt/all/refs/heads/main/antiafk.txt"
+    )
+
+    if not AntiAFK then
+        warn("[Loader] Anti-AFK โหลดไม่สำเร็จ -> หยุด")
+        return
+    end
+
+    task.spawn(function()
+        local success, err = pcall(AntiAFK)
+
+        if not success then
+            warn("[AntiAFK] ERROR:", err)
+            getgenv().AntiAFKLoaded = nil
+            getgenv().AntiAFKStarted = nil
+        end
+    end)
+
+    -- รอให้ Anti-AFK แจ้งว่าเริ่มทำงาน
+    print("[Loader] รอ Anti-AFK เริ่มทำงาน...")
+
+    local timeout = 15
+    local elapsed = 0
+
+    while not getgenv().AntiAFKStarted and elapsed < timeout do
+        task.wait(0.5)
+        elapsed += 0.5
+    end
+
+    if not getgenv().AntiAFKStarted then
+        warn(
+            "[Loader] Anti-AFK ไม่ได้เริ่มทำงานภายใน "
+            .. timeout
+            .. " วินาที -> ไม่รัน ForFarm"
+        )
+
+        getgenv().AntiAFKLoaded = nil
+        return
+    end
+
+    getgenv().AntiAFKLoaded = true
+
+    print("[Loader] Anti-AFK เริ่มทำงานสำเร็จ!")
+
+else
+
+    print("[Loader] Anti-AFK รันอยู่แล้ว -> ข้าม")
+
+end
+
+-- ==================================================
+-- รอ 5 วินาที
+-- ==================================================
+
+print("[Loader] Anti-AFK OK")
+print("[Loader] รอ 5 วินาทีก่อนรัน ForFarm...")
+
+task.wait(5)
+
+-- ==================================================
+-- ForFarm
+-- ==================================================
+
+if not getgenv().ForFarmLoaded then
+
+    print("[Loader] กำลังโหลด ForFarm...")
+
+    local ForFarm = runScript(
+        "ForFarm",
+        "https://raw.githubusercontent.com/r6dt/all/refs/heads/main/ForFarm.txt"
+    )
+
+    if not ForFarm then
+        warn("[Loader] ForFarm โหลดไม่สำเร็จ")
+        return
+    end
+
+    task.spawn(function()
+
+        local success, err = pcall(ForFarm)
+
+        if not success then
+            warn("[ForFarm] ERROR:", err)
+            getgenv().ForFarmLoaded = nil
+        end
+
+    end)
+
+    getgenv().ForFarmLoaded = true
+
+    print("[Loader] ForFarm เริ่มทำงานแล้ว!")
+
+else
+
+    print("[Loader] ForFarm รันอยู่แล้ว -> ข้าม")
+
+end
+
+print("[Loader] =================================")
+print("[Loader] โหลดทุกอย่างเสร็จแล้ว")
+print("[Loader] =================================")
