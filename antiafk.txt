@@ -16,6 +16,10 @@ local lastPosition = nil
 print("================================")
 print("Anti-AFK Kick")
 print("ทำงานแล้ว!")
+
+-- แจ้ง Loader ว่า Anti-AFK เริ่มทำงานแล้ว
+getgenv().AntiAFKStarted = true
+
 print("Check ทุก:", CHECK_INTERVAL, "วินาที")
 print("ต้องอยู่จุดเดิม:", REQUIRED_CHECKS, "ครั้ง")
 print("Tolerance:", POSITION_TOLERANCE, "studs")
