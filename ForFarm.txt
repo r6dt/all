@@ -1,5 +1,6 @@
-setfpscap(5)
+if not game:IsLoaded() then game.Loaded:Wait() end
 script_key = "tJdrDPwHpKoMXopYiqXkKUmZIQHhmrCA";
+setfpscap(5)
 getgenv().UserConfig = {
     -- Auto Hop
     ["Enable Auto Hop"] = false,
