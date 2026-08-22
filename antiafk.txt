@@ -22,7 +22,7 @@ local MAX_BLOCKED_JOBS = 20
 local JOB_FILE = "antiafk_jobs.txt"
 
 -- Server Hop
-local HOP_RETRY_DELAY = 3
+local HOP_RETRY_DELAY = 60
 local SERVER_PAGE_LIMIT = 10
 
 -- เผื่อที่ว่างไว้สำหรับ Teleport
