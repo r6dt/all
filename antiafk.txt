@@ -3,21 +3,31 @@ if not game:IsLoaded() then
 end
 
 local Players = game:GetService("Players")
+local TeleportService = game:GetService("TeleportService")
+local HttpService = game:GetService("HttpService")
 
 local Player = Players.LocalPlayer
+
+-- ==================================================
+-- CONFIG
+-- ==================================================
 
 local CHECK_INTERVAL = 60
 local REQUIRED_CHECKS = 5
 local POSITION_TOLERANCE = 5
 
-local samePositionCount = 0
-local lastPosition = nil
+local LOADER_URL =
+    "https://raw.githubusercontent.com/r6dt/all/refs/heads/main/loader.txt"
+
+-- ==================================================
+-- START
+-- ==================================================
 
 print("================================")
-print("Anti-AFK Kick")
+print("Anti-AFK Server Hop")
 print("ทำงานแล้ว!")
 
--- แจ้ง Loader ว่า Anti-AFK เริ่มทำงานแล้ว
+-- สำคัญ: แจ้ง Loader ว่า Anti-AFK เริ่มทำงานแล้ว
 getgenv().AntiAFKStarted = true
 
 print("Check ทุก:", CHECK_INTERVAL, "วินาที")
@@ -25,14 +35,23 @@ print("ต้องอยู่จุดเดิม:", REQUIRED_CHECKS, "คร
 print("Tolerance:", POSITION_TOLERANCE, "studs")
 print("================================")
 
+local samePositionCount = 0
+local lastPosition = nil
+
+-- ==================================================
+-- GET POSITION
+-- ==================================================
+
 local function getPosition()
+
     local character = Player.Character
 
     if not character then
         return nil
     end
 
-    local root = character:FindFirstChild("HumanoidRootPart")
+    local root =
+        character:FindFirstChild("HumanoidRootPart")
 
     if not root then
         return nil
@@ -41,26 +60,209 @@ local function getPosition()
     return root.Position
 end
 
+-- ==================================================
+-- CHECK POSITION
+-- ==================================================
+
 local function isSamePosition(pos1, pos2)
+
     if not pos1 or not pos2 then
         return false
     end
 
-    local distance = (pos1 - pos2).Magnitude
+    local distance =
+        (pos1 - pos2).Magnitude
 
-    print("[AntiAFK] ระยะที่ขยับ:", distance, "studs")
+    print(
+        "[AntiAFK] ระยะที่ขยับ:",
+        distance,
+        "studs"
+    )
 
     return distance <= POSITION_TOLERANCE
 end
 
+-- ==================================================
+-- QUEUE LOADER
+-- ==================================================
+
+local function queueLoader()
+
+    local queue =
+        queue_on_teleport
+        or queueonteleport
+
+    if not queue then
+
+        warn(
+            "[ServerHop] Executor ไม่รองรับ "
+            .. "queue_on_teleport"
+        )
+
+        return false
+    end
+
+    local success, err = pcall(function()
+
+        queue([[
+            task.wait(3)
+
+            loadstring(game:HttpGet(
+                "]] .. LOADER_URL .. [["
+            ))()
+        ]])
+
+    end)
+
+    if not success then
+
+        warn(
+            "[ServerHop] Queue Loader ไม่สำเร็จ:",
+            err
+        )
+
+        return false
+    end
+
+    print(
+        "[ServerHop] เตรียม Loader "
+        .. "สำหรับ Server ใหม่แล้ว"
+    )
+
+    return true
+end
+
+-- ==================================================
+-- SERVER HOP
+-- ==================================================
+
+local function serverHop()
+
+    print("[ServerHop] กำลังค้นหา Server ใหม่...")
+
+    -- เตรียม Loader ก่อน Teleport
+    if not queueLoader() then
+
+        warn(
+            "[ServerHop] ไม่สามารถเตรียม Loader "
+            .. "สำหรับ Server ใหม่"
+        )
+
+        return false
+    end
+
+    local placeId = game.PlaceId
+
+    local success, response = pcall(function()
+
+        return game:HttpGet(
+            "https://games.roblox.com/v1/games/"
+            .. placeId
+            .. "/servers/Public?sortOrder=Asc&limit=100"
+        )
+
+    end)
+
+    if not success then
+
+        warn(
+            "[ServerHop] ดึง Server List ไม่สำเร็จ:",
+            response
+        )
+
+        return false
+    end
+
+    local decodeSuccess, data =
+        pcall(function()
+
+            return HttpService:JSONDecode(response)
+
+        end)
+
+    if not decodeSuccess
+        or not data
+        or not data.data then
+
+        warn(
+            "[ServerHop] อ่าน Server List ไม่สำเร็จ"
+        )
+
+        return false
+    end
+
+    for _, server in ipairs(data.data) do
+
+        if server.id ~= game.JobId
+            and server.playing < server.maxPlayers then
+
+            print(
+                "[ServerHop] พบ Server:",
+                server.id
+            )
+
+            print(
+                "[ServerHop] Players:",
+                server.playing
+                .. "/"
+                .. server.maxPlayers
+            )
+
+            local teleportSuccess, teleportError =
+                pcall(function()
+
+                    TeleportService:
+                        TeleportToPlaceInstance(
+                            placeId,
+                            server.id,
+                            Player
+                        )
+
+                end)
+
+            if teleportSuccess then
+
+                print(
+                    "[ServerHop] กำลัง Teleport..."
+                )
+
+                return true
+
+            else
+
+                warn(
+                    "[ServerHop] Teleport ไม่สำเร็จ:",
+                    teleportError
+                )
+
+                return false
+            end
+        end
+    end
+
+    warn("[ServerHop] ไม่พบ Server อื่น")
+
+    return false
+end
+
+-- ==================================================
+-- MAIN LOOP
+-- ==================================================
+
 while true do
+
     task.wait(CHECK_INTERVAL)
 
-    local currentPosition = getPosition()
+    local currentPosition =
+        getPosition()
 
     if currentPosition then
 
-        if lastPosition and isSamePosition(lastPosition, currentPosition) then
+        if lastPosition
+            and isSamePosition(
+                lastPosition,
+                currentPosition
+            ) then
 
             samePositionCount += 1
 
@@ -79,11 +281,14 @@ while true do
                     .. REQUIRED_CHECKS
                     .. " ครั้ง"
                 )
-                print("[AntiAFK] กำลัง Kick ออกจากเกม...")
+                print(
+                    "[ServerHop] กำลังหา Server ใหม่..."
+                )
                 print("================================")
 
-                Player:Kick("AFK / อยู่จุดเดิมนานเกินไป")
-                break
+                if serverHop() then
+                    break
+                end
             end
 
         else
