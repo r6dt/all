@@ -1,9 +1,24 @@
 print("[Loader] เริ่มทำงาน")
 
+local ANTI_AFK_URL =
+    "https://raw.githubusercontent.com/r6dt/all/refs/heads/main/antiafk.txt"
+
+local FOR_FARM_URL =
+    "https://raw.githubusercontent.com/r6dt/all/refs/heads/main/ForFarm.txt"
+
+local MAX_RETRY = 3
+local START_TIMEOUT = 15
+local WAIT_BEFORE_FARM = 5
+
+-- ==================================================
+-- LOAD SCRIPT
+-- ==================================================
+
 local function loadScript(name, url)
     print("[Loader] กำลังโหลด " .. name .. "...")
 
     local success, result = pcall(function()
+
         local source = game:HttpGet(url)
 
         if not source or source == "" then
@@ -25,77 +40,129 @@ local function loadScript(name, url)
     end
 
     print("[Loader] " .. name .. " โหลดสำเร็จ")
+
     return result
 end
 
 -- ==================================================
--- Anti-AFK
+-- ANTI-AFK
 -- ==================================================
+
+local antiAFKSuccess = false
 
 if getgenv().AntiAFKStarted then
 
     print("[Loader] Anti-AFK ทำงานอยู่แล้ว -> ข้าม")
+    antiAFKSuccess = true
 
 else
 
-    if not getgenv().AntiAFKLoaded then
+    for attempt = 1, MAX_RETRY do
+
+        print(
+            "[Loader] Anti-AFK Attempt "
+            .. attempt
+            .. "/"
+            .. MAX_RETRY
+        )
+
+        -- ล้างสถานะก่อนลองใหม่
+        getgenv().AntiAFKStarted = nil
 
         local AntiAFK = loadScript(
             "Anti-AFK",
-            "https://raw.githubusercontent.com/r6dt/all/refs/heads/main/antiafk.txt"
+            ANTI_AFK_URL
         )
 
-        if not AntiAFK then
-            warn("[Loader] Anti-AFK โหลดไม่ได้ -> หยุด")
-            return
+        if AntiAFK then
+
+            task.spawn(function()
+
+                local success, err = pcall(AntiAFK)
+
+                if not success then
+                    warn("[AntiAFK] ERROR:", err)
+                end
+
+            end)
+
+            print("[Loader] รอ Anti-AFK เริ่มทำงาน...")
+
+            local elapsed = 0
+
+            while not getgenv().AntiAFKStarted
+                and elapsed < START_TIMEOUT do
+
+                task.wait(0.5)
+                elapsed += 0.5
+
+            end
+
+            if getgenv().AntiAFKStarted then
+
+                print(
+                    "[Loader] Anti-AFK สำเร็จ! "
+                    .. "Attempt "
+                    .. attempt
+                )
+
+                getgenv().AntiAFKLoaded = true
+                antiAFKSuccess = true
+
+                break
+
+            else
+
+                warn(
+                    "[Loader] Anti-AFK ไม่เริ่มทำงาน "
+                    .. "ภายใน "
+                    .. START_TIMEOUT
+                    .. " วินาที"
+                )
+
+            end
+
         end
 
-        getgenv().AntiAFKLoaded = true
-
-        task.spawn(function()
-            local success, err = pcall(AntiAFK)
-
-            if not success then
-                warn("[AntiAFK] ERROR:", err)
-                getgenv().AntiAFKLoaded = nil
-                getgenv().AntiAFKStarted = nil
-            end
-        end)
-
-    else
-        print("[Loader] Anti-AFK กำลังเริ่มทำงาน...")
+        if attempt < MAX_RETRY then
+            print("[Loader] รอ 2 วินาทีก่อน Retry...")
+            task.wait(2)
+        end
     end
-
-    -- รอ Anti-AFK แจ้งว่าเริ่มทำงานจริง
-    print("[Loader] กำลังตรวจสอบ Anti-AFK...")
-
-    local timeout = 15
-    local elapsed = 0
-
-    while not getgenv().AntiAFKStarted and elapsed < timeout do
-        task.wait(0.5)
-        elapsed += 0.5
-    end
-
-    if not getgenv().AntiAFKStarted then
-        warn("[Loader] Anti-AFK ไม่เริ่มทำงานภายใน 15 วินาที")
-        warn("[Loader] ยกเลิกการรัน ForFarm")
-        return
-    end
-
-    print("[Loader] Anti-AFK เริ่มทำงานสำเร็จ!")
-
 end
 
 -- ==================================================
--- รอ 5 วินาที
+-- ANTI-AFK FAILED
 -- ==================================================
 
-print("[Loader] รอ 5 วินาทีก่อนรัน ForFarm...")
-task.wait(5)
+if not antiAFKSuccess then
+
+    warn(
+        "[Loader] Anti-AFK ล้มเหลวครบ "
+        .. MAX_RETRY
+        .. " ครั้ง"
+    )
+
+    warn("[Loader] จะไม่รัน ForFarm")
+
+    return
+end
 
 -- ==================================================
--- ForFarm
+-- WAIT BEFORE FORFARM
+-- ==================================================
+
+print(
+    "[Loader] Anti-AFK OK -> "
+    .. "รอ "
+    .. WAIT_BEFORE_FARM
+    .. " วินาที..."
+)
+
+task.wait(WAIT_BEFORE_FARM)
+
+-- ==================================================
+-- FORFARM
 -- ==================================================
 
 if getgenv().ForFarmLoaded then
@@ -104,25 +171,34 @@ if getgenv().ForFarmLoaded then
 
 else
 
+    print("[Loader] กำลังโหลด ForFarm...")
+
     local ForFarm = loadScript(
         "ForFarm",
-        "https://raw.githubusercontent.com/r6dt/all/refs/heads/main/ForFarm.txt"
+        FOR_FARM_URL
     )
 
     if not ForFarm then
-        warn("[Loader] ForFarm โหลดไม่ได้")
+
+        warn("[Loader] ForFarm โหลดไม่สำเร็จ")
+
         return
     end
 
     getgenv().ForFarmLoaded = true
 
     task.spawn(function()
+
         local success, err = pcall(ForFarm)
 
         if not success then
+
             warn("[ForFarm] ERROR:", err)
+
             getgenv().ForFarmLoaded = nil
+
         end
+
     end)
 
     print("[Loader] ForFarm เริ่มทำงานแล้ว!")
