@@ -11,6 +11,10 @@ local FOR_FARM_URL =
 
 local MAX_RETRY = 3
 local START_TIMEOUT = 15
+
+-- รอ 300 วินาที ก่อนลอง AntiAFK ใหม่
+local ANTI_AFK_RETRY_INTERVAL = 300
+
 local WAIT_BEFORE_FARM = 5
 
 -- ==================================================
@@ -18,6 +22,7 @@ local WAIT_BEFORE_FARM = 5
 -- ==================================================
 
 local function loadScript(name, url)
+
     print("[Loader] กำลังโหลด " .. name .. "...")
 
     local success, result = pcall(function()
@@ -38,7 +43,12 @@ local function loadScript(name, url)
     end)
 
     if not success then
-        warn("[Loader] " .. name .. " โหลดไม่สำเร็จ:", result)
+
+        warn(
+            "[Loader] " .. name .. " โหลดไม่สำเร็จ:",
+            result
+        )
+
         return nil
     end
 
@@ -48,91 +58,167 @@ local function loadScript(name, url)
 end
 
 -- ==================================================
--- ANTI-AFK
+-- START ANTI-AFK
+-- ==================================================
+
+local function startAntiAFK()
+
+    -- ถ้าทำงานอยู่แล้ว ไม่ต้องโหลดซ้ำ
+    if getgenv().AntiAFKStarted == true then
+
+        print(
+            "[Loader] Anti-AFK ทำงานอยู่แล้ว -> ข้าม"
+        )
+
+        return true
+    end
+
+    print("[Loader] กำลังเริ่ม Anti-AFK...")
+
+    getgenv().AntiAFKStarted = nil
+    getgenv().AntiAFKLoaded = nil
+
+    local AntiAFK = loadScript(
+        "Anti-AFK",
+        ANTI_AFK_URL
+    )
+
+    if not AntiAFK then
+
+        warn(
+            "[Loader] โหลด Anti-AFK ไม่สำเร็จ"
+        )
+
+        return false
+    end
+
+    task.spawn(function()
+
+        local success, err = pcall(AntiAFK)
+
+        if not success then
+
+            warn(
+                "[AntiAFK] ERROR:",
+                err
+            )
+
+            -- ถ้า Script Error ให้ถือว่ายังไม่ทำงาน
+            getgenv().AntiAFKStarted = nil
+        end
+    end)
+
+    print(
+        "[Loader] รอ Anti-AFK เริ่มทำงาน..."
+    )
+
+    local elapsed = 0
+
+    while not getgenv().AntiAFKStarted
+        and elapsed < START_TIMEOUT do
+
+        task.wait(0.5)
+        elapsed += 0.5
+
+    end
+
+    if getgenv().AntiAFKStarted == true then
+
+        print(
+            "[Loader] ✅ Anti-AFK เริ่มทำงานสำเร็จ"
+        )
+
+        getgenv().AntiAFKLoaded = true
+
+        return true
+
+    end
+
+    warn(
+        "[Loader] ❌ Anti-AFK ไม่เริ่มทำงานภายใน "
+        .. START_TIMEOUT
+        .. " วินาที"
+    )
+
+    return false
+end
+
+-- ==================================================
+-- ANTI-AFK INITIAL START
 -- ==================================================
 
 local antiAFKSuccess = false
 
-if getgenv().AntiAFKStarted then
+for attempt = 1, MAX_RETRY do
 
-    print("[Loader] Anti-AFK ทำงานอยู่แล้ว -> ข้าม")
-    antiAFKSuccess = true
+    print(
+        "[Loader] Anti-AFK Attempt "
+        .. attempt
+        .. "/"
+        .. MAX_RETRY
+    )
 
-else
+    if startAntiAFK() then
 
-    for attempt = 1, MAX_RETRY do
+        antiAFKSuccess = true
+        break
+
+    end
+
+    if attempt < MAX_RETRY then
 
         print(
-            "[Loader] Anti-AFK Attempt "
-            .. attempt
-            .. "/"
-            .. MAX_RETRY
+            "[Loader] รอ 2 วินาทีก่อน Retry..."
         )
 
-        -- ล้างสถานะก่อนลองใหม่
-        getgenv().AntiAFKStarted = nil
+        task.wait(2)
+    end
+end
 
-        local AntiAFK = loadScript(
-            "Anti-AFK",
-            ANTI_AFK_URL
-        )
+-- ==================================================
+-- ANTI-AFK WATCHDOG
+-- ==================================================
 
-        if AntiAFK then
+task.spawn(function()
 
-            task.spawn(function()
+    while true do
 
-                local success, err = pcall(AntiAFK)
+        task.wait(ANTI_AFK_RETRY_INTERVAL)
 
-                if not success then
-                    warn("[AntiAFK] ERROR:", err)
-                end
+        -- ถ้า AntiAFK ยังทำงานอยู่
+        if getgenv().AntiAFKStarted == true then
 
-            end)
+            print(
+                "[Loader] Anti-AFK STATUS: RUNNING"
+            )
 
-            print("[Loader] รอ Anti-AFK เริ่มทำงาน...")
+        else
 
-            local elapsed = 0
+            warn(
+                "[Loader] ⚠️ Anti-AFK ไม่ทำงาน"
+            )
 
-            while not getgenv().AntiAFKStarted
-                and elapsed < START_TIMEOUT do
+            warn(
+                "[Loader] 🔄 กำลังลอง Anti-AFK ใหม่..."
+            )
 
-                task.wait(0.5)
-                elapsed += 0.5
-
-            end
-
-            if getgenv().AntiAFKStarted then
+            if startAntiAFK() then
 
                 print(
-                    "[Loader] Anti-AFK สำเร็จ! "
-                    .. "Attempt "
-                    .. attempt
+                    "[Loader] ✅ Anti-AFK กลับมาทำงานแล้ว"
                 )
 
-                getgenv().AntiAFKLoaded = true
                 antiAFKSuccess = true
-
-                break
 
             else
 
                 warn(
-                    "[Loader] Anti-AFK ไม่เริ่มทำงาน "
-                    .. "ภายใน "
-                    .. START_TIMEOUT
-                    .. " วินาที"
+                    "[Loader] ❌ Anti-AFK Retry ไม่สำเร็จ"
                 )
-
             end
-
-        end
-
-        if attempt < MAX_RETRY then
-            print("[Loader] รอ 2 วินาทีก่อน Retry...")
-            task.wait(2)
         end
     end
-end
+end)
 
 -- ==================================================
 -- ANTI-AFK FAILED
@@ -141,14 +227,20 @@ end
 if not antiAFKSuccess then
 
     warn(
-        "[Loader] Anti-AFK ล้มเหลวครบ "
-        .. MAX_RETRY
-        .. " ครั้ง"
+        "[Loader] ⚠️ Anti-AFK เริ่มต้นไม่สำเร็จ"
     )
 
-    warn("[Loader] จะไม่รัน ForFarm")
+    warn(
+        "[Loader] แต่ Watchdog จะลองใหม่ทุก "
+        .. ANTI_AFK_RETRY_INTERVAL
+        .. " วินาที"
+    )
 
-    return
+else
+
+    print(
+        "[Loader] ✅ Anti-AFK พร้อมทำงาน"
+    )
 end
 
 -- ==================================================
@@ -156,10 +248,9 @@ end
 -- ==================================================
 
 print(
-    "[Loader] Anti-AFK OK -> "
-    .. "รอ "
+    "[Loader] รอ "
     .. WAIT_BEFORE_FARM
-    .. " วินาที..."
+    .. " วินาที ก่อนเริ่ม ForFarm..."
 )
 
 task.wait(WAIT_BEFORE_FARM)
@@ -170,11 +261,15 @@ task.wait(WAIT_BEFORE_FARM)
 
 if getgenv().ForFarmLoaded then
 
-    print("[Loader] ForFarm รันอยู่แล้ว -> ข้าม")
+    print(
+        "[Loader] ForFarm รันอยู่แล้ว -> ข้าม"
+    )
 
 else
 
-    print("[Loader] กำลังโหลด ForFarm...")
+    print(
+        "[Loader] กำลังโหลด ForFarm..."
+    )
 
     local ForFarm = loadScript(
         "ForFarm",
@@ -183,7 +278,9 @@ else
 
     if not ForFarm then
 
-        warn("[Loader] ForFarm โหลดไม่สำเร็จ")
+        warn(
+            "[Loader] ForFarm โหลดไม่สำเร็จ"
+        )
 
         return
     end
@@ -196,18 +293,21 @@ else
 
         if not success then
 
-            warn("[ForFarm] ERROR:", err)
+            warn(
+                "[ForFarm] ERROR:",
+                err
+            )
 
             getgenv().ForFarmLoaded = nil
-
         end
-
     end)
 
-    print("[Loader] ForFarm เริ่มทำงานแล้ว!")
-
+    print(
+        "[Loader] ✅ ForFarm เริ่มทำงานแล้ว!"
+    )
 end
 
 print("[Loader] =================================")
 print("[Loader] โหลดทุกอย่างเสร็จแล้ว")
+print("[Loader] Anti-AFK Watchdog: 300 วินาที")
 print("[Loader] =================================")
