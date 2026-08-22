@@ -1,3 +1,6 @@
+repeat task.wait() until game:IsLoaded()
+task.wait(10)
+
 print("[Loader] เริ่มทำงาน")
 
 local ANTI_AFK_URL =
