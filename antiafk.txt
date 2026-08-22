@@ -6,21 +6,7 @@ local Players = game:GetService("Players")
 local HttpService = game:GetService("HttpService")
 local TeleportService = game:GetService("TeleportService")
 
--- =========================================================
--- WAIT PLAYER / CHARACTER
--- =========================================================
-
-local Player
-
-repeat
-    Player = Players.LocalPlayer
-    task.wait()
-until Player
-
-repeat
-    task.wait()
-until Player.Character
-    and Player.Character:FindFirstChild("HumanoidRootPart")
+local Player = Players.LocalPlayer
 
 -- =========================================================
 -- CONFIG
@@ -43,6 +29,7 @@ local SERVER_PAGE_LIMIT = 10
 -- STATUS
 -- =========================================================
 
+getgenv().AntiAFKStarted = true
 getgenv().AntiAFKRunning = true
 getgenv().AntiAFKHopping = false
 
@@ -118,13 +105,11 @@ local function loadJobFile()
 
         if jobId and jobId ~= "" then
 
-            jobId = jobId:gsub("^%s+", "")
-            jobId = jobId:gsub("%s+$", "")
-
             if not blockedJobs[jobId] then
                 blockedJobs[jobId] = true
                 count += 1
             end
+
         end
     end
 
@@ -197,7 +182,7 @@ local function addBlockedJob(jobId)
     blockedJobs[jobId] = true
 
     print("================================")
-    print("[AntiAFK] เพิ่ม JobId ที่ถูก Block")
+    print("[AntiAFK] เพิ่ม JobId ที่ถูก Kick")
     print("[AntiAFK] JobId:", jobId)
     print("================================")
 
@@ -286,9 +271,7 @@ printBlockedJobs()
 local function serverHop()
 
     if getgenv().AntiAFKHopping then
-
         print("[AntiAFK] Server Hop กำลังทำงานอยู่แล้ว")
-
         return
     end
 
@@ -422,23 +405,19 @@ local function serverHop()
                 cursor = data.nextPageCursor
 
                 if not cursor then
-
-                    print(
-                        "[AntiAFK] ไม่มีหน้า Server เพิ่มแล้ว"
-                    )
-
+                    print("[AntiAFK] ไม่มีหน้า Server เพิ่มแล้ว")
                     break
                 end
             end
         end
     end
 
-    -- =====================================================
-    -- NO SERVER FOUND
-    -- =====================================================
+    warn("[AntiAFK] ❌ หา Server ใหม่ที่ไม่ Blocked ไม่พบ")
 
-    warn(
-        "[AntiAFK] ❌ หา Server ใหม่ที่ไม่ Blocked ไม่พบ"
+    print(
+        "[AntiAFK] รอ",
+        HOP_RETRY_DELAY,
+        "วินาที แล้วลองใหม่"
     )
 
     task.wait(HOP_RETRY_DELAY)
@@ -448,16 +427,6 @@ local function serverHop()
 
     task.spawn(serverHop)
 end
-
--- =========================================================
--- MARK STARTED
--- =========================================================
--- ตั้งตรงนี้หลังจากโหลด Job File และเตรียมระบบแล้ว
-
-getgenv().AntiAFKStarted = true
-
-print("[AntiAFK] ✅ Anti-AFK พร้อมทำงาน")
-print("[AntiAFK] Current JobId:", game.JobId)
 
 -- =========================================================
 -- CURRENT JOB CHECK
@@ -475,15 +444,40 @@ if isBlockedJob(game.JobId) then
     task.spawn(function()
 
         task.wait(1)
-
         serverHop()
 
     end)
 
     return
+else
+
+    print(
+        "[AntiAFK] ✅ JobId ปัจจุบันไม่อยู่ใน Blocked List"
+    )
 end
 
-print("[AntiAFK] ✅ JobId ปัจจุบันไม่อยู่ใน Blocked List")
+-- =========================================================
+-- WAIT FOR CHARACTER
+-- =========================================================
+
+print("[AntiAFK] กำลังรอ Character...")
+
+local character = Player.Character
+
+if not character then
+    character = Player.CharacterAdded:Wait()
+end
+
+local root = character:WaitForChild(
+    "HumanoidRootPart",
+    30
+)
+
+if root then
+    print("[AntiAFK] ✅ Character พร้อมแล้ว")
+else
+    warn("[AntiAFK] ⚠️ ไม่พบ HumanoidRootPart ภายใน 30 วินาที")
+end
 
 -- =========================================================
 -- POSITION
@@ -494,20 +488,20 @@ local lastPosition = nil
 
 local function getPosition()
 
-    local character = Player.Character
+    local currentCharacter = Player.Character
 
-    if not character then
+    if not currentCharacter then
         return nil
     end
 
-    local root =
-        character:FindFirstChild("HumanoidRootPart")
+    local currentRoot =
+        currentCharacter:FindFirstChild("HumanoidRootPart")
 
-    if not root then
+    if not currentRoot then
         return nil
     end
 
-    return root.Position
+    return currentRoot.Position
 end
 
 -- =========================================================
@@ -531,6 +525,30 @@ local function isSamePosition(pos1, pos2)
 
     return distance <= POSITION_TOLERANCE
 end
+
+-- =========================================================
+-- CHARACTER RESPAWN HANDLER
+-- =========================================================
+
+Player.CharacterAdded:Connect(function(newCharacter)
+
+    print("[AntiAFK] Character ใหม่ -> Reset Position Check")
+
+    lastPosition = nil
+    samePositionCount = 0
+
+    task.spawn(function()
+
+        local newRoot = newCharacter:WaitForChild(
+            "HumanoidRootPart",
+            30
+        )
+
+        if newRoot then
+            print("[AntiAFK] ✅ Character ใหม่พร้อมแล้ว")
+        end
+    end)
+end)
 
 -- =========================================================
 -- STATUS WATCHDOG
@@ -560,7 +578,7 @@ task.spawn(function()
 
             print(
                 "[AntiAFK] STATUS: HOPPING"
-                .. " | JobId: "
+                .. " | Current JobId: "
                 .. tostring(game.JobId)
                 .. " | Blocked: "
                 .. tostring(getBlockedJobCount())
@@ -568,6 +586,7 @@ task.spawn(function()
 
         else
 
+            warn("[AntiAFK] STATUS: STOPPED")
             break
         end
     end
@@ -579,7 +598,7 @@ end)
 
 print("[AntiAFK] Main Loop เริ่มทำงานแล้ว")
 
-while true do
+while getgenv().AntiAFKRunning do
 
     task.wait(CHECK_INTERVAL)
 
@@ -593,6 +612,7 @@ while true do
 
         warn(
             "[AntiAFK] ไม่พบ Character/HumanoidRootPart"
+            .. " -> รอรอบถัดไป"
         )
 
         continue
@@ -607,9 +627,7 @@ while true do
         lastPosition = currentPosition
         samePositionCount = 0
 
-        print(
-            "[AntiAFK] บันทึกตำแหน่งเริ่มต้นแล้ว"
-        )
+        print("[AntiAFK] บันทึกตำแหน่งเริ่มต้นแล้ว")
 
         print(
             "[AntiAFK] Check: 0/"
@@ -642,6 +660,7 @@ while true do
 
             print("================================")
             print("[AntiAFK] ⚠️ AFK TRIGGERED")
+
             print(
                 "[AntiAFK] นิ่งครบ "
                 .. REQUIRED_CHECKS
@@ -650,29 +669,19 @@ while true do
 
             local currentJobId = game.JobId
 
-            print(
-                "[AntiAFK] กำลังบันทึก JobId..."
-            )
+            print("[AntiAFK] กำลังบันทึก JobId...")
 
             local saved =
                 addBlockedJob(currentJobId)
 
             if saved then
 
-                print(
-                    "[AntiAFK] ✅ JobId ถูกบันทึกแล้ว"
-                )
-
-                print(
-                    "[AntiAFK] JobId:",
-                    currentJobId
-                )
+                print("[AntiAFK] ✅ JobId ถูกบันทึกแล้ว")
+                print("[AntiAFK] JobId:", currentJobId)
 
             else
 
-                warn(
-                    "[AntiAFK] ❌ บันทึก JobId ไม่สำเร็จ"
-                )
+                warn("[AntiAFK] ❌ บันทึก JobId ไม่สำเร็จ")
             end
 
             print("[AntiAFK] 🔴 สาเหตุ: AFK")
@@ -683,9 +692,7 @@ while true do
 
             task.wait(1)
 
-            Player:Kick(
-                "AntiAFK: AFK Server"
-            )
+            Player:Kick("AntiAFK: AFK Server")
 
             break
         end
