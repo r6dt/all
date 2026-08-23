@@ -21,15 +21,26 @@ local MAX_BLOCKED_JOBS = 20
 
 local JOB_FILE = "antiafk_jobs.txt"
 
--- Server Hop
-local HOP_RETRY_DELAY = 60
+-- =========================================================
+-- SERVER POOL
+-- =========================================================
+
+local SERVER_POOL_FILE = "antiafk_serverpool.txt"
+
+-- จำนวนหน้าที่โหลดล่วงหน้า
 local SERVER_PAGE_LIMIT = 10
 
--- เผื่อที่ว่างไว้สำหรับ Teleport
--- เช่น 10/10 = เต็ม
--- 9/10 = ข้าม
--- 8/10 = เข้าได้
+-- โหลด Pool ใหม่ทุกกี่วินาที
+local SERVER_POOL_REFRESH = 300
+
+-- จำนวน Server สูงสุดที่เก็บใน Pool
+local SERVER_POOL_MAX = 500
+
+-- เว้นช่อง Server
 local SERVER_SLOT_BUFFER = 1
+
+-- เวลาระหว่างการพยายาม Hop
+local HOP_RETRY_DELAY = 5
 
 -- =========================================================
 -- STATUS
@@ -47,8 +58,8 @@ print("[AntiAFK] Check ทุก:", CHECK_INTERVAL, "วินาที")
 print("[AntiAFK] ต้องนิ่ง:", REQUIRED_CHECKS, "ครั้ง")
 print("[AntiAFK] Tolerance:", POSITION_TOLERANCE, "studs")
 print("[AntiAFK] Job File:", JOB_FILE)
-print("[AntiAFK] Server Slot Buffer:", SERVER_SLOT_BUFFER)
-print("[AntiAFK] Random Server Hop: ENABLED")
+print("[AntiAFK] Server Pool:", SERVER_POOL_FILE)
+print("[AntiAFK] Server Pool Max:", SERVER_POOL_MAX)
 print("================================")
 
 -- =========================================================
@@ -63,11 +74,11 @@ local hasFileAPI =
 if hasFileAPI then
     print("[AntiAFK] File API: พร้อมใช้งาน")
 else
-    warn("[AntiAFK] File API ไม่รองรับ -> ใช้ getgenv() แทน")
+    warn("[AntiAFK] File API ไม่รองรับ -> ใช้ Memory แทน")
 end
 
 -- =========================================================
--- MEMORY FALLBACK
+-- BLOCKED JOB MEMORY
 -- =========================================================
 
 if type(getgenv().AntiAFKBlockedJobs) ~= "table" then
@@ -75,6 +86,16 @@ if type(getgenv().AntiAFKBlockedJobs) ~= "table" then
 end
 
 local blockedJobs = getgenv().AntiAFKBlockedJobs
+
+-- =========================================================
+-- SERVER POOL MEMORY
+-- =========================================================
+
+if type(getgenv().AntiAFKServerPool) ~= "table" then
+    getgenv().AntiAFKServerPool = {}
+end
+
+local serverPool = getgenv().AntiAFKServerPool
 
 -- =========================================================
 -- LOAD JOB FILE
@@ -96,12 +117,11 @@ local function loadJobFile()
     end)
 
     if not success then
-        warn("[AntiAFK] อ่านไฟล์ JobId ไม่สำเร็จ:", content)
+        warn("[AntiAFK] อ่าน Job File ไม่สำเร็จ:", content)
         return
     end
 
     if not content or content == "" then
-        print("[AntiAFK] ไฟล์ JobId ว่าง")
         return
     end
 
@@ -114,17 +134,17 @@ local function loadJobFile()
         if jobId and jobId ~= "" then
 
             if not blockedJobs[jobId] then
+
                 blockedJobs[jobId] = true
                 count += 1
-            end
 
+            end
         end
     end
 
     print(
-        "[AntiAFK] โหลด JobId จากไฟล์แล้ว:",
-        count,
-        "รายการ"
+        "[AntiAFK] โหลด Blocked JobId:",
+        count
     )
 end
 
@@ -137,7 +157,6 @@ loadJobFile()
 local function saveJobFile()
 
     if not hasFileAPI then
-        warn("[AntiAFK] ไม่มี File API -> ไม่สามารถบันทึกไฟล์ได้")
         return false
     end
 
@@ -158,15 +177,23 @@ local function saveJobFile()
     end
 
     local success, err = pcall(function()
-        writefile(JOB_FILE, output)
+
+        writefile(
+            JOB_FILE,
+            output
+        )
+
     end)
 
     if not success then
-        warn("[AntiAFK] บันทึก JobId ไม่สำเร็จ:", err)
+
+        warn(
+            "[AntiAFK] บันทึก JobId ไม่สำเร็จ:",
+            err
+        )
+
         return false
     end
-
-    print("[AntiAFK] บันทึก JobId ลง", JOB_FILE, "แล้ว")
 
     return true
 end
@@ -178,19 +205,17 @@ end
 local function addBlockedJob(jobId)
 
     if not jobId or jobId == "" then
-        warn("[AntiAFK] JobId ว่าง -> ไม่บันทึก")
         return false
     end
 
     if blockedJobs[jobId] then
-        print("[AntiAFK] JobId นี้มีอยู่แล้ว:", jobId)
         return true
     end
 
     blockedJobs[jobId] = true
 
     print("================================")
-    print("[AntiAFK] เพิ่ม JobId ที่ถูก Kick")
+    print("[AntiAFK] 🚫 เพิ่ม Blocked JobId")
     print("[AntiAFK] JobId:", jobId)
     print("================================")
 
@@ -202,14 +227,17 @@ local function addBlockedJob(jobId)
 
     while #jobs > MAX_BLOCKED_JOBS do
 
-        local removeId = table.remove(jobs, 1)
+        local removeId =
+            table.remove(jobs, 1)
 
         if removeId then
             blockedJobs[removeId] = nil
         end
     end
 
-    return saveJobFile()
+    saveJobFile()
+
+    return true
 end
 
 -- =========================================================
@@ -226,7 +254,7 @@ local function isBlockedJob(jobId)
 end
 
 -- =========================================================
--- COUNT BLOCKED JOBS
+-- COUNT BLOCKED
 -- =========================================================
 
 local function getBlockedJobCount()
@@ -241,40 +269,482 @@ local function getBlockedJobCount()
 end
 
 -- =========================================================
--- PRINT JOB LIST
+-- SAVE SERVER POOL
 -- =========================================================
 
-local function printBlockedJobs()
+local function saveServerPool()
+
+    if not hasFileAPI then
+        return false
+    end
+
+    local output = ""
 
     local count = 0
 
-    print("[AntiAFK] ===== Blocked JobIds =====")
+    for jobId, info in pairs(serverPool) do
 
-    for jobId in pairs(blockedJobs) do
+        if count >= SERVER_POOL_MAX then
+            break
+        end
 
-        count += 1
+        if jobId
+            and jobId ~= ""
+            and not isBlockedJob(jobId)
+        then
+
+            local playing =
+                tonumber(info.playing) or 0
+
+            local maxPlayers =
+                tonumber(info.maxPlayers) or 0
+
+            output =
+                output
+                .. jobId
+                .. "|"
+                .. playing
+                .. "|"
+                .. maxPlayers
+                .. "\n"
+
+            count += 1
+        end
+    end
+
+    local success, err = pcall(function()
+
+        writefile(
+            SERVER_POOL_FILE,
+            output
+        )
+
+    end)
+
+    if not success then
+
+        warn(
+            "[AntiAFK] บันทึก Server Pool ไม่สำเร็จ:",
+            err
+        )
+
+        return false
+    end
+
+    print(
+        "[AntiAFK] 💾 บันทึก Server Pool:",
+        count,
+        "Server"
+    )
+
+    return true
+end
+
+-- =========================================================
+-- LOAD SERVER POOL
+-- =========================================================
+
+local function loadServerPool()
+
+    if not hasFileAPI then
+        return
+    end
+
+    if not isfile(SERVER_POOL_FILE) then
 
         print(
-            "[AntiAFK]",
-            count .. ".",
+            "[AntiAFK] ยังไม่มี Server Pool"
+        )
+
+        return
+    end
+
+    local success, content =
+        pcall(function()
+
+            return readfile(
+                SERVER_POOL_FILE
+            )
+
+        end)
+
+    if not success then
+
+        warn(
+            "[AntiAFK] อ่าน Server Pool ไม่สำเร็จ:",
+            content
+        )
+
+        return
+    end
+
+    if not content or content == "" then
+        return
+    end
+
+    local count = 0
+
+    for line in string.gmatch(
+        content,
+        "[^\r\n]+"
+    ) do
+
+        local jobId,
+            playing,
+            maxPlayers =
+            line:match(
+                "^([^|]+)|([^|]+)|([^|]+)"
+            )
+
+        if jobId
+            and jobId ~= ""
+            and not isBlockedJob(jobId)
+        then
+
+            serverPool[jobId] = {
+
+                playing =
+                    tonumber(playing) or 0,
+
+                maxPlayers =
+                    tonumber(maxPlayers) or 0
+            }
+
+            count += 1
+        end
+    end
+
+    print(
+        "[AntiAFK] 📦 โหลด Server Pool:",
+        count,
+        "Server"
+    )
+end
+
+loadServerPool()
+
+-- =========================================================
+-- REMOVE FROM POOL
+-- =========================================================
+
+local function removeFromServerPool(jobId)
+
+    if serverPool[jobId] then
+
+        serverPool[jobId] = nil
+
+        print(
+            "[AntiAFK] 🗑️ ลบ JobId ออกจาก Pool:",
+            jobId
+        )
+
+    end
+end
+
+-- =========================================================
+-- ADD TO POOL
+-- =========================================================
+
+local function addToServerPool(
+    jobId,
+    playing,
+    maxPlayers
+)
+
+    if not jobId
+        or jobId == ""
+    then
+        return
+    end
+
+    if isBlockedJob(jobId) then
+        return
+    end
+
+    if jobId == game.JobId then
+        return
+    end
+
+    serverPool[jobId] = {
+
+        playing =
+            tonumber(playing) or 0,
+
+        maxPlayers =
+            tonumber(maxPlayers) or 0
+    }
+end
+
+-- =========================================================
+-- REFRESH SERVER POOL
+-- =========================================================
+
+local function refreshServerPool()
+
+    local placeId = game.PlaceId
+
+    print("================================")
+    print("[AntiAFK] 📥 กำลังโหลด Server Pool")
+    print("[AntiAFK] Page Limit:", SERVER_PAGE_LIMIT)
+    print("================================")
+
+    local cursor = nil
+
+    local added = 0
+
+    for page = 1, SERVER_PAGE_LIMIT do
+
+        local url =
+            "https://games.roblox.com/v1/games/"
+            .. tostring(placeId)
+            .. "/servers/Public?sortOrder=Asc&limit=100"
+
+        if cursor then
+
+            url =
+                url
+                .. "&cursor="
+                .. HttpService:UrlEncode(
+                    cursor
+                )
+
+        end
+
+        local success, result =
+            pcall(function()
+
+                return game:HttpGet(url)
+
+            end)
+
+        if not success then
+
+            warn(
+                "[AntiAFK] ❌ โหลด Server Page ไม่สำเร็จ:",
+                page
+            )
+
+            break
+        end
+
+        local decodeSuccess, data =
+            pcall(function()
+
+                return HttpService:JSONDecode(
+                    result
+                )
+
+            end)
+
+        if not decodeSuccess
+            or not data
+            or not data.data
+        then
+
+            warn(
+                "[AntiAFK] ❌ Server Data ไม่ถูกต้อง"
+            )
+
+            break
+        end
+
+        print(
+            "[AntiAFK] Page",
+            page,
+            "| พบ",
+            #data.data,
+            "Server"
+        )
+
+        for _, server in ipairs(data.data) do
+
+            local jobId =
+                server.id
+
+            local playing =
+                tonumber(server.playing) or 0
+
+            local maxPlayers =
+                tonumber(server.maxPlayers) or 0
+
+            if jobId
+                and jobId ~= ""
+                and jobId ~= game.JobId
+                and not isBlockedJob(jobId)
+            then
+
+                local freeSlots =
+                    maxPlayers - playing
+
+                if maxPlayers > SERVER_SLOT_BUFFER
+                    and freeSlots > SERVER_SLOT_BUFFER
+                then
+
+                    if not serverPool[jobId] then
+                        added += 1
+                    end
+
+                    addToServerPool(
+                        jobId,
+                        playing,
+                        maxPlayers
+                    )
+                end
+            end
+        end
+
+        cursor =
+            data.nextPageCursor
+
+        if not cursor then
+            break
+        end
+    end
+
+    -- =====================================================
+    -- LIMIT POOL
+    -- =====================================================
+
+    local jobs = {}
+
+    for jobId in pairs(serverPool) do
+        table.insert(
+            jobs,
             jobId
         )
     end
 
+    while #jobs > SERVER_POOL_MAX do
+
+        local index =
+            math.random(
+                1,
+                #jobs
+            )
+
+        local removeId =
+            table.remove(
+                jobs,
+                index
+            )
+
+        if removeId then
+            serverPool[removeId] = nil
+        end
+    end
+
+    saveServerPool()
+
+    local total = 0
+
+    for _ in pairs(serverPool) do
+        total += 1
+    end
+
     print(
-        "[AntiAFK] ทั้งหมด:",
-        count,
-        "JobId"
+        "[AntiAFK] ✅ Server Pool พร้อม:",
+        total,
+        "Server"
     )
 
-    print("[AntiAFK] =========================")
+    print(
+        "[AntiAFK] เพิ่มใหม่:",
+        added
+    )
+
+    return total > 0
 end
 
-printBlockedJobs()
+-- =========================================================
+-- BACKGROUND SERVER POOL
+-- =========================================================
+
+task.spawn(function()
+
+    -- ให้เกมโหลดก่อน
+    task.wait(5)
+
+    -- ถ้า Pool ยังน้อย ให้โหลดทันที
+    local poolCount = 0
+
+    for _ in pairs(serverPool) do
+        poolCount += 1
+    end
+
+    if poolCount < 10 then
+        refreshServerPool()
+    end
+
+    -- Refresh เป็นระยะ
+    while getgenv().AntiAFKRunning do
+
+        task.wait(
+            SERVER_POOL_REFRESH
+        )
+
+        if not getgenv().AntiAFKRunning then
+            break
+        end
+
+        refreshServerPool()
+    end
+end)
+
+-- =========================================================
+-- GET RANDOM SERVER FROM POOL
+-- =========================================================
+
+local function getRandomServerFromPool()
+
+    local candidates = {}
+
+    for jobId, info in pairs(serverPool) do
+
+        if jobId
+            and jobId ~= ""
+            and jobId ~= game.JobId
+            and not isBlockedJob(jobId)
+        then
+
+            local playing =
+                tonumber(info.playing) or 0
+
+            local maxPlayers =
+                tonumber(info.maxPlayers) or 0
+
+            local freeSlots =
+                maxPlayers - playing
+
+            if maxPlayers > SERVER_SLOT_BUFFER
+                and freeSlots > SERVER_SLOT_BUFFER
+            then
+
+                table.insert(
+                    candidates,
+                    {
+                        JobId = jobId,
+                        Playing = playing,
+                        MaxPlayers = maxPlayers
+                    }
+                )
+            end
+        end
+    end
+
+    if #candidates == 0 then
+        return nil
+    end
+
+    return candidates[
+        math.random(
+            1,
+            #candidates
+        )
+    ]
+end
 
 -- =========================================================
 -- SERVER HOP
--- RANDOM + BLOCKED JOB FILTER + 771 RETRY
 -- =========================================================
 
 local function serverHop()
@@ -291,482 +761,270 @@ local function serverHop()
     getgenv().AntiAFKHopping = true
     getgenv().AntiAFKRunning = false
 
-    local placeId = game.PlaceId
+    local placeId =
+        game.PlaceId
 
     print("================================")
-    print("[AntiAFK] 🔄 RANDOM SERVER HOP")
-    print("[AntiAFK] Current JobId:", game.JobId)
-    print("[AntiAFK] Blocked Jobs:", getBlockedJobCount())
-    print("[AntiAFK] Retry Delay:", HOP_RETRY_DELAY, "วินาที")
-    print("[AntiAFK] Page Limit:", SERVER_PAGE_LIMIT)
+    print("[AntiAFK] 🔄 SERVER HOP")
+    print(
+        "[AntiAFK] Current JobId:",
+        game.JobId
+    )
+    print(
+        "[AntiAFK] Blocked Jobs:",
+        getBlockedJobCount()
+    )
     print("================================")
 
     -- =====================================================
-    -- TELEPORT FAILED EVENT
-    -- =====================================================
-
-    local teleportFailed = false
-    local teleportFailResult = nil
-    local teleportFailMessage = nil
-    local teleportFailJobId = nil
-
-    local teleportConnection
-
-    teleportConnection =
-        TeleportService.TeleportInitFailed:Connect(
-            function(
-                player,
-                teleportResult,
-                errorMessage
-            )
-
-                if player ~= Player then
-                    return
-                end
-
-                teleportFailed = true
-                teleportFailResult = teleportResult
-                teleportFailMessage = errorMessage
-
-                warn("================================")
-                warn("[AntiAFK] ❌ TELEPORT FAILED")
-                warn(
-                    "[AntiAFK] Result:",
-                    tostring(teleportResult)
-                )
-                warn(
-                    "[AntiAFK] Message:",
-                    tostring(errorMessage)
-                )
-
-                if teleportFailJobId then
-
-                    warn(
-                        "[AntiAFK] ❌ JobId ที่เข้าไม่ได้:",
-                        teleportFailJobId
-                    )
-
-                end
-
-                -- =================================================
-                -- 771 CHECK
-                -- =================================================
-
-                local resultText =
-                    tostring(teleportResult)
-
-                local messageText =
-                    tostring(errorMessage)
-
-                if string.find(resultText, "771", 1, true)
-                    or string.find(messageText, "771", 1, true)
-                then
-
-                    warn(
-                        "[AntiAFK] ⚠️ ตรวจพบ Error 771"
-                    )
-
-                    warn(
-                        "[AntiAFK] 🔄 จะข้าม JobId นี้และสุ่ม Server ใหม่"
-                    )
-
-                end
-
-                warn("================================")
-            end
-        )
-
-    -- =====================================================
-    -- SEARCH LOOP
+    -- HOP LOOP
     -- =====================================================
 
     while true do
 
-        local currentJobId = game.JobId
+        local server =
+            getRandomServerFromPool()
 
         -- =================================================
-        -- SERVERS TRIED IN THIS SEARCH ROUND
+        -- POOL EMPTY
         -- =================================================
 
-        local triedServers = {}
+        if not server then
 
-        triedServers[currentJobId] = true
-
-        -- =================================================
-        -- COLLECT SERVER LIST
-        -- =================================================
-
-        local serverCandidates = {}
-
-        local cursor = nil
-
-        for page = 1, SERVER_PAGE_LIMIT do
-
-            print(
-                "[AntiAFK] 🔎 กำลังค้นหา Server... Page:",
-                page
+            warn(
+                "[AntiAFK] ⚠️ Server Pool หมด"
             )
 
-            local url =
-                "https://games.roblox.com/v1/games/"
-                .. tostring(placeId)
-                .. "/servers/Public?sortOrder=Asc&limit=100"
-
-            if cursor then
-
-                url =
-                    url
-                    .. "&cursor="
-                    .. HttpService:UrlEncode(cursor)
-
-            end
-
-            -- =================================================
-            -- GET SERVER LIST
-            -- =================================================
-
-            local success, result =
-                pcall(function()
-
-                    return game:HttpGet(url)
-
-                end)
-
-            if not success then
-
-                warn(
-                    "[AntiAFK] ❌ ดึง Server List ไม่สำเร็จ:",
-                    result
-                )
-
-                break
-            end
-
-            -- =================================================
-            -- JSON
-            -- =================================================
-
-            local decodeSuccess, data =
-                pcall(function()
-
-                    return HttpService:JSONDecode(result)
-
-                end)
-
-            if not decodeSuccess then
-
-                warn(
-                    "[AntiAFK] ❌ Decode Server List ไม่สำเร็จ:",
-                    data
-                )
-
-                break
-            end
-
-            if not data or not data.data then
-
-                warn(
-                    "[AntiAFK] ❌ Server List ไม่มีข้อมูล"
-                )
-
-                break
-            end
-
             print(
-                "[AntiAFK] พบ Server Page นี้:",
-                #data.data
+                "[AntiAFK] 📥 โหลด Server Pool ใหม่..."
             )
 
-            -- =================================================
-            -- COLLECT AVAILABLE SERVERS
-            -- =================================================
+            local loaded =
+                refreshServerPool()
 
-            for _, server in ipairs(data.data) do
+            if not loaded then
 
-                local serverJobId =
-                    server.id
-
-                local playing =
-                    tonumber(server.playing) or 0
-
-                local maxPlayers =
-                    tonumber(server.maxPlayers) or 0
-
-                if serverJobId
-                    and serverJobId ~= ""
-                    and serverJobId ~= currentJobId
-                    and not triedServers[serverJobId]
-                    and not isBlockedJob(serverJobId)
-                then
-
-                    local freeSlots =
-                        maxPlayers - playing
-
-                    if maxPlayers > SERVER_SLOT_BUFFER
-                        and freeSlots > SERVER_SLOT_BUFFER
-                    then
-
-                        table.insert(
-                            serverCandidates,
-                            {
-                                id = serverJobId,
-                                playing = playing,
-                                maxPlayers = maxPlayers,
-                                freeSlots = freeSlots
-                            }
-                        )
-
-                    end
-                end
-            end
-
-            -- =================================================
-            -- NEXT PAGE
-            -- =================================================
-
-            cursor =
-                data.nextPageCursor
-
-            if not cursor then
-
-                print(
-                    "[AntiAFK] ไม่มีหน้า Server เพิ่มแล้ว"
+                warn(
+                    "[AntiAFK] ❌ โหลด Server ใหม่ไม่สำเร็จ"
                 )
 
-                break
+                task.wait(
+                    HOP_RETRY_DELAY
+                )
+
+                continue
+            end
+
+            server =
+                getRandomServerFromPool()
+
+            if not server then
+
+                task.wait(
+                    HOP_RETRY_DELAY
+                )
+
+                continue
             end
         end
 
-        -- =====================================================
-        -- SERVER CANDIDATE COUNT
-        -- =====================================================
+        local serverJobId =
+            server.JobId
 
-        print(
-            "[AntiAFK] 🎲 Server ที่ผ่าน Filter:",
-            #serverCandidates
+        -- =================================================
+        -- REMOVE FROM POOL BEFORE TELEPORT
+        -- =================================================
+
+        removeFromServerPool(
+            serverJobId
         )
 
-        -- =====================================================
-        -- RANDOMIZE SERVER LIST
-        -- =====================================================
+        saveServerPool()
 
-        for i = #serverCandidates, 2, -1 do
+        print("================================")
+        print(
+            "[AntiAFK] 🎲 เลือก Server แบบสุ่ม"
+        )
+        print(
+            "[AntiAFK] JobId:",
+            serverJobId
+        )
+        print(
+            "[AntiAFK] Players:",
+            server.Playing
+            .. "/"
+            .. server.MaxPlayers
+        )
+        print(
+            "[AntiAFK] Pool ที่เหลือ:"
+        )
 
-            local randomIndex =
-                math.random(1, i)
+        local poolCount = 0
 
-            serverCandidates[i],
-            serverCandidates[randomIndex] =
-                serverCandidates[randomIndex],
-                serverCandidates[i]
+        for _ in pairs(serverPool) do
+            poolCount += 1
         end
 
-        -- =====================================================
-        -- RANDOM SERVER TELEPORT
-        -- =====================================================
-
-        for _, server in ipairs(serverCandidates) do
-
-            local serverJobId =
-                server.id
-
-            if not triedServers[serverJobId] then
-
-                triedServers[serverJobId] = true
-
-                -- =================================================
-                -- RESET TELEPORT STATUS
-                -- =================================================
-
-                teleportFailed = false
-                teleportFailResult = nil
-                teleportFailMessage = nil
-                teleportFailJobId = serverJobId
-
-                print("================================")
-                print("[AntiAFK] 🎲 RANDOM SERVER")
-                print("[AntiAFK] JobId:", serverJobId)
-
-                print(
-                    "[AntiAFK] Players:",
-                    server.playing
-                    .. "/"
-                    .. server.maxPlayers
-                )
-
-                print(
-                    "[AntiAFK] เหลือช่อง:",
-                    server.freeSlots
-                )
-
-                print(
-                    "[AntiAFK] 🚀 กำลัง Teleport..."
-                )
-
-                print("================================")
-
-                -- =================================================
-                -- TELEPORT
-                -- =================================================
-
-                local teleportCallSuccess,
-                    teleportCallError =
-                    pcall(function()
-
-                        TeleportService:
-                            TeleportToPlaceInstance(
-                                placeId,
-                                serverJobId,
-                                Player
-                            )
-
-                    end)
-
-                if not teleportCallSuccess then
-
-                    warn("================================")
-                    warn(
-                        "[AntiAFK] ❌ Teleport Call Error"
-                    )
-
-                    warn(
-                        "[AntiAFK] Error:",
-                        tostring(teleportCallError)
-                    )
-
-                    warn(
-                        "[AntiAFK] ❌ ข้าม JobId:",
-                        serverJobId
-                    )
-
-                    warn(
-                        "[AntiAFK] 🔄 สุ่ม Server ใหม่..."
-                    )
-
-                    warn("================================")
-
-                    teleportFailed = false
-                    teleportFailResult = nil
-                    teleportFailMessage = nil
-                    teleportFailJobId = nil
-
-                    task.wait(0.5)
-
-                    continue
-                end
-
-                print(
-                    "[AntiAFK] 📡 ส่ง Teleport แล้ว"
-                )
-
-                -- =================================================
-                -- WAIT TELEPORT RESULT
-                -- =================================================
-
-                local waitTime = 0
-
-                local TELEPORT_TIMEOUT = 10
-
-                while waitTime < TELEPORT_TIMEOUT do
-
-                    task.wait(0.25)
-
-                    waitTime += 0.25
-
-                    if teleportFailed then
-                        break
-                    end
-                end
-
-                -- =================================================
-                -- TELEPORT FAILED
-                -- =================================================
-
-                if teleportFailed then
-
-                    warn("================================")
-                    warn(
-                        "[AntiAFK] ❌ Teleport ล้มเหลว"
-                    )
-
-                    warn(
-                        "[AntiAFK] Result:",
-                        tostring(
-                            teleportFailResult
-                        )
-                    )
-
-                    warn(
-                        "[AntiAFK] Message:",
-                        tostring(
-                            teleportFailMessage
-                        )
-                    )
-
-                    warn(
-                        "[AntiAFK] ❌ ข้าม JobId:",
-                        serverJobId
-                    )
-
-                    warn(
-                        "[AntiAFK] 🎲 สุ่ม Server ถัดไป..."
-                    )
-
-                    warn("================================")
-
-                    teleportFailed = false
-                    teleportFailResult = nil
-                    teleportFailMessage = nil
-                    teleportFailJobId = nil
-
-                    task.wait(0.5)
-
-                    continue
-                end
-
-                -- =================================================
-                -- NO TELEPORT ERROR
-                -- =================================================
-
-                print(
-                    "[AntiAFK] ⏳ ยังไม่มี Teleport Error"
-                )
-
-                print(
-                    "[AntiAFK] 📡 รอการย้าย Server..."
-                )
-
-                -- =================================================
-                -- สำคัญ
-                --
-                -- ถ้า Teleport สำเร็จจริง
-                -- Script จะเริ่มใหม่ใน Server ใหม่
-                --
-                -- ถ้าไม่มี Error ภายใน Timeout
-                -- ไม่ควรยิง TP ซ้ำทันที
-                -- =================================================
-
-                task.wait(1)
-
-                return
-            end
-        end
-
-        -- =====================================================
-        -- NO SERVER FOUND
-        -- =====================================================
-
-        warn(
-            "[AntiAFK] ❌ ไม่มี Server ที่สามารถเข้าได้"
+        print(
+            "[AntiAFK]",
+            poolCount,
+            "Server"
         )
 
         print(
-            "[AntiAFK] 🔄 จะค้นหาใหม่ใน",
-            HOP_RETRY_DELAY,
-            "วินาที..."
+            "[AntiAFK] 🚀 กำลัง Teleport..."
         )
 
-        task.wait(HOP_RETRY_DELAY)
+        print("================================")
+
+        -- =================================================
+        -- TELEPORT
+        -- =================================================
+
+        local teleportFailed = false
+        local teleportResult = nil
+        local teleportMessage = nil
+
+        local connection
+
+        connection =
+            TeleportService.TeleportInitFailed:
+            Connect(
+                function(
+                    player,
+                    result,
+                    message
+                )
+
+                    if player ~= Player then
+                        return
+                    end
+
+                    teleportFailed = true
+                    teleportResult = result
+                    teleportMessage = message
+
+                end
+            )
+
+        local callSuccess,
+            callError =
+            pcall(function()
+
+                TeleportService:
+                    TeleportToPlaceInstance(
+                        placeId,
+                        serverJobId,
+                        Player
+                    )
+
+            end)
+
+        if not callSuccess then
+
+            warn(
+                "[AntiAFK] ❌ Teleport Call Error:",
+                callError
+            )
+
+            if connection then
+                connection:Disconnect()
+            end
+
+            task.wait(
+                HOP_RETRY_DELAY
+            )
+
+            continue
+        end
+
+        -- =================================================
+        -- WAIT TELEPORT RESULT
+        -- =================================================
+
+        local timeout = 0
+
+        while timeout < 10 do
+
+            task.wait(0.25)
+
+            timeout += 0.25
+
+            if teleportFailed then
+                break
+            end
+        end
+
+        if connection then
+            connection:Disconnect()
+        end
+
+        -- =================================================
+        -- TELEPORT FAILED
+        -- =================================================
+
+        if teleportFailed then
+
+            warn("================================")
+            warn(
+                "[AntiAFK] ❌ Teleport ไม่สำเร็จ"
+            )
+
+            warn(
+                "[AntiAFK] JobId:",
+                serverJobId
+            )
+
+            warn(
+                "[AntiAFK] Result:",
+                tostring(
+                    teleportResult
+                )
+            )
+
+            warn(
+                "[AntiAFK] Message:",
+                tostring(
+                    teleportMessage
+                )
+            )
+
+            warn(
+                "[AntiAFK] 🗑️ ลบ JobId นี้ออกจาก Pool"
+            )
+
+            warn(
+                "[AntiAFK] 🔄 ลอง Server ถัดไป..."
+            )
+
+            warn("================================")
+
+            -- ไม่บันทึก Job นี้กลับเข้า Pool
+            -- แล้วสุ่มตัวใหม่ทันที
+
+            task.wait(0.5)
+
+        else
+
+            -- =================================================
+            -- TELEPORT SENT
+            -- =================================================
+
+            print(
+                "[AntiAFK] 📡 ส่ง Teleport แล้ว"
+            )
+
+            print(
+                "[AntiAFK] ⏳ รอเข้า Server ใหม่..."
+            )
+
+            -- ไม่ยิง API ซ้ำ
+            -- ถ้าเข้าได้ Script จะเริ่มใหม่
+            -- ถ้า JobId ใหม่ถูก Blocked
+            -- CURRENT JOB CHECK จะเรียก Hop อีกครั้ง
+
+            return
+        end
     end
 end
 
@@ -777,10 +1035,19 @@ end
 if isBlockedJob(game.JobId) then
 
     print("================================")
-    print("[AntiAFK] ⚠️ BLOCKED JOB DETECTED")
-    print("[AntiAFK] JobId:", game.JobId)
-    print("[AntiAFK] Server นี้อยู่ใน Blocked List")
-    print("[AntiAFK] 🔄 กำลังสุ่ม Hop ไป Server อื่น...")
+    print(
+        "[AntiAFK] ⚠️ BLOCKED JOB DETECTED"
+    )
+    print(
+        "[AntiAFK] JobId:",
+        game.JobId
+    )
+    print(
+        "[AntiAFK] 🚫 Server นี้ถูก Block"
+    )
+    print(
+        "[AntiAFK] 🔄 ใช้ Server Pool ที่เตรียมไว้"
+    )
     print("================================")
 
     task.spawn(function()
@@ -796,7 +1063,7 @@ if isBlockedJob(game.JobId) then
 else
 
     print(
-        "[AntiAFK] ✅ JobId ปัจจุบันไม่อยู่ใน Blocked List"
+        "[AntiAFK] ✅ JobId ปัจจุบันไม่ถูก Block"
     )
 end
 
@@ -804,18 +1071,25 @@ end
 -- WAIT FOR CHARACTER
 -- =========================================================
 
-print("[AntiAFK] กำลังรอ Character...")
+print(
+    "[AntiAFK] กำลังรอ Character..."
+)
 
-local character = Player.Character
+local character =
+    Player.Character
 
 if not character then
-    character = Player.CharacterAdded:Wait()
+
+    character =
+        Player.CharacterAdded:Wait()
+
 end
 
-local root = character:WaitForChild(
-    "HumanoidRootPart",
-    30
-)
+local root =
+    character:WaitForChild(
+        "HumanoidRootPart",
+        30
+    )
 
 if root then
 
@@ -826,8 +1100,9 @@ if root then
 else
 
     warn(
-        "[AntiAFK] ⚠️ ไม่พบ HumanoidRootPart ภายใน 30 วินาที"
+        "[AntiAFK] ⚠️ ไม่พบ HumanoidRootPart"
     )
+
 end
 
 -- =========================================================
@@ -847,7 +1122,8 @@ local function getPosition()
     end
 
     local currentRoot =
-        currentCharacter:FindFirstChild(
+        currentCharacter:
+        FindFirstChild(
             "HumanoidRootPart"
         )
 
@@ -876,15 +1152,18 @@ local function isSamePosition(
 
     print(
         "[AntiAFK] ระยะที่ขยับ:",
-        math.floor(distance * 100) / 100,
+        math.floor(
+            distance * 100
+        ) / 100,
         "studs"
     )
 
-    return distance <= POSITION_TOLERANCE
+    return distance <=
+        POSITION_TOLERANCE
 end
 
 -- =========================================================
--- CHARACTER RESPAWN HANDLER
+-- CHARACTER RESPAWN
 -- =========================================================
 
 Player.CharacterAdded:Connect(
@@ -899,19 +1178,12 @@ Player.CharacterAdded:Connect(
 
         task.spawn(function()
 
-            local newRoot =
-                newCharacter:WaitForChild(
+            newCharacter:
+                WaitForChild(
                     "HumanoidRootPart",
                     30
                 )
 
-            if newRoot then
-
-                print(
-                    "[AntiAFK] ✅ Character ใหม่พร้อมแล้ว"
-                )
-
-            end
         end)
     end
 )
@@ -924,9 +1196,17 @@ task.spawn(function()
 
     while true do
 
-        task.wait(STATUS_INTERVAL)
+        task.wait(
+            STATUS_INTERVAL
+        )
 
         if getgenv().AntiAFKRunning then
+
+            local poolCount = 0
+
+            for _ in pairs(serverPool) do
+                poolCount += 1
+            end
 
             print(
                 "[AntiAFK] STATUS: RUNNING"
@@ -937,24 +1217,30 @@ task.spawn(function()
                 .. "/"
                 .. tostring(REQUIRED_CHECKS)
                 .. " | Blocked: "
-                .. tostring(getBlockedJobCount())
+                .. tostring(
+                    getBlockedJobCount()
+                )
+                .. " | Pool: "
+                .. tostring(poolCount)
             )
 
         elseif getgenv().AntiAFKHopping then
 
+            local poolCount = 0
+
+            for _ in pairs(serverPool) do
+                poolCount += 1
+            end
+
             print(
                 "[AntiAFK] STATUS: HOPPING"
-                .. " | Current JobId: "
+                .. " | JobId: "
                 .. tostring(game.JobId)
-                .. " | Blocked: "
-                .. tostring(getBlockedJobCount())
+                .. " | Pool: "
+                .. tostring(poolCount)
             )
 
         else
-
-            warn(
-                "[AntiAFK] STATUS: STOPPED"
-            )
 
             break
         end
@@ -965,11 +1251,15 @@ end)
 -- MAIN LOOP
 -- =========================================================
 
-print("[AntiAFK] Main Loop เริ่มทำงานแล้ว")
+print(
+    "[AntiAFK] Main Loop เริ่มทำงานแล้ว"
+)
 
 while getgenv().AntiAFKRunning do
 
-    task.wait(CHECK_INTERVAL)
+    task.wait(
+        CHECK_INTERVAL
+    )
 
     if not getgenv().AntiAFKRunning then
         break
@@ -982,7 +1272,6 @@ while getgenv().AntiAFKRunning do
 
         warn(
             "[AntiAFK] ไม่พบ Character/HumanoidRootPart"
-            .. " -> รอรอบถัดไป"
         )
 
         continue
@@ -1030,10 +1319,17 @@ while getgenv().AntiAFKRunning do
         -- AFK TRIGGER
         -- =================================================
 
-        if samePositionCount >= REQUIRED_CHECKS then
+        if samePositionCount >=
+            REQUIRED_CHECKS
+        then
 
             print("================================")
-            print("[AntiAFK] ⚠️ AFK TRIGGERED")
+            print(
+                "[AntiAFK] ⚠️ AFK TRIGGERED"
+            )
+
+            local currentJobId =
+                game.JobId
 
             print(
                 "[AntiAFK] นิ่งครบ "
@@ -1041,42 +1337,30 @@ while getgenv().AntiAFKRunning do
                 .. " ครั้ง"
             )
 
-            local currentJobId =
-                game.JobId
+            -- =================================================
+            -- SAVE BLOCKED JOB
+            -- =================================================
 
-            print(
-                "[AntiAFK] กำลังบันทึก JobId..."
+            addBlockedJob(
+                currentJobId
             )
 
-            local saved =
-                addBlockedJob(
-                    currentJobId
-                )
+            -- =================================================
+            -- SAVE SERVER POOL
+            -- =================================================
 
-            if saved then
+            print(
+                "[AntiAFK] 💾 กำลังบันทึก Server Pool..."
+            )
 
-                print(
-                    "[AntiAFK] ✅ JobId ถูกบันทึกแล้ว"
-                )
-
-                print(
-                    "[AntiAFK] JobId:",
-                    currentJobId
-                )
-
-            else
-
-                warn(
-                    "[AntiAFK] ❌ บันทึก JobId ไม่สำเร็จ"
-                )
-            end
+            saveServerPool()
 
             print(
                 "[AntiAFK] 🔴 สาเหตุ: AFK"
             )
 
             print(
-                "[AntiAFK] กำลังเตะออกจาก Server..."
+                "[AntiAFK] 🔴 กำลังเตะออก..."
             )
 
             print("================================")
