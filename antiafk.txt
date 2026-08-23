@@ -26,8 +26,8 @@ local JOB_FILE = "antiafk_jobs.txt"
 -- Server Cache
 local SERVER_CACHE_FILE = "server_cache.txt"
 
--- อัปเดต Server ปัจจุบันทุก 10 นาที
-local SERVER_CACHE_UPDATE_INTERVAL = 600
+-- อัปเดต Server ปัจจุบันทุก 5 นาที
+local SERVER_CACHE_UPDATE_INTERVAL = 300
 
 -- Cache หมดอายุหลัง 1 ชั่วโมง
 local SERVER_CACHE_EXPIRE_TIME = 3600
