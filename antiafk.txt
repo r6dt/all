@@ -11,30 +11,24 @@ local Player = Players.LocalPlayer
 -- CONFIG
 -- =========================================================
 
+-- Anti AFK
 local CHECK_INTERVAL = 60
 local REQUIRED_CHECKS = 5
 local POSITION_TOLERANCE = 5
 
+-- Status
 local STATUS_INTERVAL = 10
 
--- จำนวน Blocked JobId สูงสุด
+-- Blocked Job
 local MAX_BLOCKED_JOBS = 20
-
--- JobId ที่โดน AFK / Blocked
 local JOB_FILE = "antiafk_jobs.txt"
 
--- JobId ที่ใช้สำหรับ Hop
+-- Server Cache
 local SERVER_CACHE_FILE = "server_cache.txt"
+local SERVER_CACHE_UPDATE_INTERVAL = 600 -- 10 นาที
 
--- อัปเดต Server ปัจจุบันลง Cache ทุก 10 นาที
-local SERVER_CACHE_UPDATE_INTERVAL = 600
-
--- เวลาระหว่างลอง Server ถัดไป
+-- Hop
 local HOP_RETRY_DELAY = 5
-
--- จำนวนช่องว่างขั้นต่ำที่ต้องการ
--- 1 = ขอแค่ไม่เต็ม
-local MIN_FREE_SLOTS = 1
 
 -- =========================================================
 -- STATUS
@@ -45,15 +39,14 @@ getgenv().AntiAFKRunning = true
 getgenv().AntiAFKHopping = false
 
 print("================================")
-print("[AntiAFK] Anti-AFK Kick + Server Cache")
+print("[AntiAFK] Anti-AFK + Server Cache")
 print("[AntiAFK] เริ่มทำงานแล้ว!")
 print("[AntiAFK] JobId:", game.JobId)
 print("[AntiAFK] Check ทุก:", CHECK_INTERVAL, "วินาที")
 print("[AntiAFK] ต้องนิ่ง:", REQUIRED_CHECKS, "ครั้ง")
-print("[AntiAFK] Tolerance:", POSITION_TOLERANCE, "studs")
+print("[AntiAFK] Cache Update:", SERVER_CACHE_UPDATE_INTERVAL, "วินาที")
 print("[AntiAFK] Job File:", JOB_FILE)
 print("[AntiAFK] Server Cache:", SERVER_CACHE_FILE)
-print("[AntiAFK] Cache Update:", SERVER_CACHE_UPDATE_INTERVAL, "วินาที")
 print("================================")
 
 -- =========================================================
@@ -129,13 +122,38 @@ local function loadJobFile()
         end
     end
 
-    print(
-        "[AntiAFK] โหลด Blocked JobId:",
-        count
-    )
+    print("[AntiAFK] โหลด Blocked JobId:", count)
 end
 
 loadJobFile()
+
+-- =========================================================
+-- CHECK BLOCKED JOB
+-- =========================================================
+
+local function isBlockedJob(jobId)
+
+    if not jobId or jobId == "" then
+        return false
+    end
+
+    return blockedJobs[jobId] == true
+end
+
+-- =========================================================
+-- COUNT BLOCKED
+-- =========================================================
+
+local function getBlockedJobCount()
+
+    local count = 0
+
+    for _ in pairs(blockedJobs) do
+        count += 1
+    end
+
+    return count
+end
 
 -- =========================================================
 -- SAVE JOB FILE
@@ -155,11 +173,7 @@ local function saveJobFile()
 
     while #jobs > MAX_BLOCKED_JOBS do
 
-        local removeId =
-            table.remove(
-                jobs,
-                1
-            )
+        local removeId = table.remove(jobs, 1)
 
         if removeId then
             blockedJobs[removeId] = nil
@@ -169,119 +183,27 @@ local function saveJobFile()
     local output = ""
 
     for _, jobId in ipairs(jobs) do
-        output =
-            output
-            .. jobId
-            .. "\n"
+        output = output .. jobId .. "\n"
     end
 
-    local success, err =
-        pcall(function()
-
-            writefile(
-                JOB_FILE,
-                output
-            )
-
-        end)
+    local success, err = pcall(function()
+        writefile(JOB_FILE, output)
+    end)
 
     if not success then
-
-        warn(
-            "[AntiAFK] บันทึก JobId ไม่สำเร็จ:",
-            err
-        )
-
+        warn("[AntiAFK] บันทึก JobId ไม่สำเร็จ:", err)
         return false
     end
 
     return true
-end
-
--- =========================================================
--- CHECK BLOCKED JOB
--- =========================================================
-
-local function isBlockedJob(jobId)
-
-    if not jobId or jobId == "" then
-        return false
-    end
-
-    return blockedJobs[jobId] == true
-end
-
--- =========================================================
--- ADD BLOCKED JOB
--- =========================================================
-
-local function addBlockedJob(jobId)
-
-    if not jobId or jobId == "" then
-        return false
-    end
-
-    -- กันซ้ำ
-    if blockedJobs[jobId] then
-
-        print(
-            "[AntiAFK] ⚠️ JobId นี้อยู่ใน Blocked แล้ว:",
-            jobId
-        )
-
-        return true
-    end
-
-    blockedJobs[jobId] = true
-
-    print("================================")
-    print("[AntiAFK] 🚫 เพิ่ม Blocked JobId")
-    print("[AntiAFK] JobId:", jobId)
-    print("================================")
-
-    -- จำกัดจำนวน
-    local jobs = {}
-
-    for id in pairs(blockedJobs) do
-        table.insert(jobs, id)
-    end
-
-    while #jobs > MAX_BLOCKED_JOBS do
-
-        local removeId =
-            table.remove(
-                jobs,
-                1
-            )
-
-        if removeId then
-            blockedJobs[removeId] = nil
-        end
-    end
-
-    saveJobFile()
-
-    return true
-end
-
--- =========================================================
--- COUNT BLOCKED
--- =========================================================
-
-local function getBlockedJobCount()
-
-    local count = 0
-
-    for _ in pairs(blockedJobs) do
-        count += 1
-    end
-
-    return count
 end
 
 -- =========================================================
 -- SERVER CACHE
 -- =========================================================
+
+-- รูปแบบ:
+-- serverCache[jobId] = playerCount
 
 local serverCache = {}
 
@@ -294,106 +216,79 @@ local function loadServerCache()
     serverCache = {}
 
     if not hasFileAPI then
-
-        warn(
-            "[AntiAFK] File API ไม่มี -> อ่าน Server Cache ไม่ได้"
-        )
-
+        warn("[AntiAFK] File API ไม่มี -> อ่าน server_cache.txt ไม่ได้")
         return false
     end
 
     if not isfile(SERVER_CACHE_FILE) then
-
-        print(
-            "[AntiAFK] ยังไม่มี",
-            SERVER_CACHE_FILE
-        )
-
+        warn("[AntiAFK] ไม่พบ", SERVER_CACHE_FILE)
         return false
     end
 
-    local success, content =
-        pcall(function()
-
-            return readfile(
-                SERVER_CACHE_FILE
-            )
-
-        end)
+    local success, content = pcall(function()
+        return readfile(SERVER_CACHE_FILE)
+    end)
 
     if not success then
-
-        warn(
-            "[AntiAFK] อ่าน Server Cache ไม่สำเร็จ:",
-            content
-        )
-
+        warn("[AntiAFK] อ่าน Server Cache ไม่สำเร็จ:", content)
         return false
     end
 
     if not content or content == "" then
-
-        warn(
-            "[AntiAFK] server_cache.txt ว่าง"
-        )
-
+        warn("[AntiAFK] server_cache.txt ว่าง")
         return false
     end
 
     local count = 0
+    local duplicateCount = 0
+    local blockedCount = 0
 
-    -- ใช้ Table กัน JobId ซ้ำตั้งแต่ตอน Load
-    local seen = {}
+    for line in string.gmatch(content, "[^\r\n]+") do
 
-    for line in string.gmatch(
-        content,
-        "[^\r\n]+"
-    ) do
+        -- รองรับ:
+        -- JobId
+        -- JobId|จำนวนคน
 
-        local jobId,
-            playing,
-            maxPlayers =
-            line:match(
-                "^([^|]+)|([^|]+)|([^|]+)"
-            )
-
-        -- รองรับไฟล์ที่มีแค่ JobId ด้วย
-        if not jobId then
-
-            jobId =
-                line:match(
-                    "^([^|]+)"
-                )
-
-            playing = 0
-            maxPlayers = 0
-        end
+        local jobId, playerCount =
+            line:match("^([^|]+)|?(%d*)")
 
         if jobId then
-            jobId =
-                jobId:match(
-                    "^%s*(.-)%s*$"
-                )
+            jobId = jobId:match("^%s*(.-)%s*$")
         end
 
-        if jobId
-            and jobId ~= ""
-            and not seen[jobId]
-            and not isBlockedJob(jobId)
-        then
+        playerCount = tonumber(playerCount) or 0
 
-            seen[jobId] = true
+        if jobId and jobId ~= "" then
 
-            serverCache[jobId] = {
+            -- =================================================
+            -- BLOCKED JOB
+            -- =================================================
 
-                playing =
-                    tonumber(playing) or 0,
+            if isBlockedJob(jobId) then
 
-                maxPlayers =
-                    tonumber(maxPlayers) or 0
-            }
+                blockedCount += 1
 
-            count += 1
+            -- =================================================
+            -- DUPLICATE JOB
+            -- =================================================
+
+            elseif serverCache[jobId] ~= nil then
+
+                duplicateCount += 1
+
+                -- ถ้ามีซ้ำ ให้ใช้จำนวนคนล่าสุด
+                serverCache[jobId] = playerCount
+
+            -- =================================================
+            -- NEW JOB
+            -- =================================================
+
+            else
+
+                serverCache[jobId] = playerCount
+                count += 1
+
+            end
         end
     end
 
@@ -403,22 +298,21 @@ local function loadServerCache()
         "JobId"
     )
 
-    return count > 0
-end
-
--- =========================================================
--- GET CACHE COUNT
--- =========================================================
-
-local function getServerCacheCount()
-
-    local count = 0
-
-    for _ in pairs(serverCache) do
-        count += 1
+    if duplicateCount > 0 then
+        print(
+            "[AntiAFK] ♻️ กรอง JobId ซ้ำ:",
+            duplicateCount
+        )
     end
 
-    return count
+    if blockedCount > 0 then
+        print(
+            "[AntiAFK] 🚫 กรอง Blocked JobId:",
+            blockedCount
+        )
+    end
+
+    return count > 0
 end
 
 -- =========================================================
@@ -433,37 +327,40 @@ local function saveServerCache()
 
     local output = ""
 
-    for jobId, info in pairs(serverCache) do
+    local count = 0
+    local duplicateGuard = {}
 
-        if jobId
-            and jobId ~= ""
-            and not isBlockedJob(jobId)
-        then
+    for jobId, playerCount in pairs(serverCache) do
 
-            output =
-                output
-                .. jobId
-                .. "|"
-                .. tostring(
-                    tonumber(info.playing) or 0
-                )
-                .. "|"
-                .. tostring(
-                    tonumber(info.maxPlayers) or 0
-                )
-                .. "\n"
+        -- =================================================
+        -- กันซ้ำอีกชั้น
+        -- =================================================
+
+        if not duplicateGuard[jobId] then
+
+            duplicateGuard[jobId] = true
+
+            -- ห้ามบันทึก Blocked Job
+            if not isBlockedJob(jobId) then
+
+                output =
+                    output
+                    .. jobId
+                    .. "|"
+                    .. tostring(playerCount or 0)
+                    .. "\n"
+
+                count += 1
+            end
         end
     end
 
-    local success, err =
-        pcall(function()
-
-            writefile(
-                SERVER_CACHE_FILE,
-                output
-            )
-
-        end)
+    local success, err = pcall(function()
+        writefile(
+            SERVER_CACHE_FILE,
+            output
+        )
+    end)
 
     if not success then
 
@@ -475,6 +372,12 @@ local function saveServerCache()
         return false
     end
 
+    print(
+        "[AntiAFK] 💾 อัปเดต Server Cache:",
+        count,
+        "JobId"
+    )
+
     return true
 end
 
@@ -484,177 +387,97 @@ end
 
 local function updateCurrentServerCache()
 
-    if not hasFileAPI then
+    local currentJobId = game.JobId
 
-        warn(
-            "[AntiAFK] ❌ File API ไม่พร้อม"
-        )
-
-        return false
-    end
-
-    local currentJobId =
-        game.JobId
-
-    if not currentJobId
-        or currentJobId == ""
-    then
-
-        warn(
-            "[AntiAFK] ❌ ไม่พบ Current JobId"
-        )
-
+    if not currentJobId or currentJobId == "" then
         return false
     end
 
     -- =====================================================
-    -- BLOCKED CHECK
+    -- ถ้า Job ปัจจุบันถูก Block แล้ว
+    -- ห้ามเพิ่มลง Cache
     -- =====================================================
 
     if isBlockedJob(currentJobId) then
 
-        print(
-            "[AntiAFK] 🚫 Current JobId ถูก Block"
-        )
+        if serverCache[currentJobId] ~= nil then
 
-        print(
-            "[AntiAFK] ไม่เพิ่มกลับเข้า Cache:",
-            currentJobId
-        )
+            serverCache[currentJobId] = nil
 
-        serverCache[currentJobId] = nil
+            print(
+                "[AntiAFK] 🚫 Current Job ถูก Block -> ลบออกจาก Cache:",
+                currentJobId
+            )
 
-        saveServerCache()
+            saveServerCache()
+        end
 
         return false
     end
 
     -- =====================================================
-    -- CURRENT PLAYER COUNT
+    -- จำนวนผู้เล่นปัจจุบัน
     -- =====================================================
 
-    local playing =
+    local playerCount =
         #Players:GetPlayers()
 
-    local maxPlayers =
-        Players.MaxPlayers
-
-    print("================================")
-    print("[AntiAFK] 💾 UPDATE CURRENT SERVER")
-    print("[AntiAFK] JobId:", currentJobId)
-    print(
-        "[AntiAFK] Players:",
-        playing .. "/" .. maxPlayers
-    )
-    print("================================")
-
     -- =====================================================
-    -- UPDATE / INSERT
+    -- UPDATE
     -- =====================================================
 
-    if serverCache[currentJobId] then
+    local existed =
+        serverCache[currentJobId] ~= nil
+
+    serverCache[currentJobId] =
+        playerCount
+
+    if existed then
 
         print(
-            "[AntiAFK] 🔄 JobId เดิม -> อัปเดตจำนวนผู้เล่น"
+            "[AntiAFK] 🔄 อัปเดต JobId เดิม:",
+            currentJobId,
+            "| ผู้เล่น:",
+            playerCount
         )
 
     else
 
         print(
-            "[AntiAFK] ➕ JobId ใหม่ -> เพิ่มเข้า Cache"
+            "[AntiAFK] ➕ เพิ่ม JobId ใหม่:",
+            currentJobId,
+            "| ผู้เล่น:",
+            playerCount
         )
     end
 
-    serverCache[currentJobId] = {
+    saveServerCache()
 
-        playing = playing,
-
-        maxPlayers = maxPlayers
-    }
-
-    -- =====================================================
-    -- CLEAN BLOCKED JOBS
-    -- =====================================================
-
-    for jobId in pairs(serverCache) do
-
-        if isBlockedJob(jobId) then
-
-            serverCache[jobId] = nil
-
-            print(
-                "[AntiAFK] 🗑️ ลบ Blocked JobId จาก Cache:",
-                jobId
-            )
-        end
-    end
-
-    -- =====================================================
-    -- SAVE
-    -- =====================================================
-
-    local saved =
-        saveServerCache()
-
-    if saved then
-
-        print(
-            "[AntiAFK] ✅ Server Cache อัปเดตสำเร็จ"
-        )
-
-    end
-
-    return saved
+    return true
 end
 
 -- =========================================================
 -- REMOVE BLOCKED JOB FROM CACHE
 -- =========================================================
 
-local function removeBlockedJobFromCache(jobId)
-
-    if not jobId then
-        return
-    end
-
-    if serverCache[jobId] then
-
-        serverCache[jobId] = nil
-
-        print(
-            "[AntiAFK] 🗑️ ลบ JobId จาก Cache:",
-                       jobId
-        )
-
-        saveServerCache()
-    end
-end
-
--- =========================================================
--- CLEAN CACHE
--- =========================================================
-
-local function cleanServerCache()
+local function removeBlockedJobsFromCache()
 
     local removed = 0
 
     for jobId in pairs(serverCache) do
 
-        if not jobId
-            or jobId == ""
-            or isBlockedJob(jobId)
-        then
+        if isBlockedJob(jobId) then
 
             serverCache[jobId] = nil
-
             removed += 1
+
         end
     end
 
     if removed > 0 then
 
         print(
-            "[AntiAFK] 🧹 ลบ Cache ที่ไม่สามารถใช้ได้:",
+            "[AntiAFK] 🧹 ลบ Blocked Job จาก Cache:",
             removed
         )
 
@@ -663,17 +486,32 @@ local function cleanServerCache()
 end
 
 -- =========================================================
--- RANDOM SERVER FROM CACHE
+-- CACHE COUNT
 -- =========================================================
 
-local function getRandomCachedJob()
+local function getServerCacheCount()
 
-    local candidates = {}
+    local count = 0
 
-    local currentJobId =
-        game.JobId
+    for _ in pairs(serverCache) do
+        count += 1
+    end
 
-    for jobId, info in pairs(serverCache) do
+    return count
+end
+
+-- =========================================================
+-- GET VALID CACHED JOBS
+-- =========================================================
+
+local function getValidCachedJobs()
+
+    local currentJobId = game.JobId
+    local maxPlayers = Players.MaxPlayers or math.huge
+
+    local validJobs = {}
+
+    for jobId, playerCount in pairs(serverCache) do
 
         if jobId
             and jobId ~= ""
@@ -681,55 +519,49 @@ local function getRandomCachedJob()
             and not isBlockedJob(jobId)
         then
 
-            local playing =
-                tonumber(info.playing) or 0
-
-            local maxPlayers =
-                tonumber(info.maxPlayers) or 0
-
-            local freeSlots =
-                maxPlayers - playing
+            playerCount =
+                tonumber(playerCount) or 0
 
             -- =================================================
-            -- SERVER ต้องมีข้อมูล MaxPlayers
-            -- และยังไม่เต็ม
+            -- ไม่เอา Server ที่เต็ม
             -- =================================================
 
-            if maxPlayers > 0
-                and freeSlots >= MIN_FREE_SLOTS
-            then
+            if playerCount < maxPlayers then
 
                 table.insert(
-                    candidates,
+                    validJobs,
                     {
-                        JobId = jobId,
-                        Playing = playing,
-                        MaxPlayers = maxPlayers,
-                        FreeSlots = freeSlots
+                        jobId = jobId,
+                        playerCount = playerCount
                     }
                 )
+
             end
         end
     end
 
-    if #candidates == 0 then
+    return validJobs
+end
 
-        return nil
-    end
+-- =========================================================
+-- SHUFFLE
+-- =========================================================
 
-    -- =====================================================
-    -- RANDOM
-    -- =====================================================
+local function shuffle(list)
 
-    local selected =
-        candidates[
+    for i = #list, 2, -1 do
+
+        local j =
             math.random(
                 1,
-                #candidates
+                i
             )
-        ]
 
-    return selected
+        list[i], list[j] =
+            list[j], list[i]
+    end
+
+    return list
 end
 
 -- =========================================================
@@ -752,98 +584,74 @@ local function serverHop()
 
     print("================================")
     print("[AntiAFK] 🔄 SERVER CACHE HOP")
-    print(
-        "[AntiAFK] Current JobId:",
-        game.JobId
-    )
-    print(
-        "[AntiAFK] Blocked Jobs:",
-        getBlockedJobCount()
-    )
-    print(
-        "[AntiAFK] Cache:",
-        getServerCacheCount(),
-        "JobId"
-    )
+    print("[AntiAFK] Current JobId:", game.JobId)
+    print("[AntiAFK] Blocked:", getBlockedJobCount())
+    print("[AntiAFK] Cache:", getServerCacheCount())
     print("================================")
 
     -- =====================================================
-    -- LOAD CACHE
+    -- โหลด Cache ใหม่
     -- =====================================================
 
-    if not loadServerCache() then
+    loadServerCache()
 
+    -- ลบ Blocked ออกจาก Cache
+    removeBlockedJobsFromCache()
+
+    -- =====================================================
+    -- สร้างรายการ Server ที่ใช้ได้
+    -- =====================================================
+
+    local validJobs =
+        getValidCachedJobs()
+
+    if #validJobs == 0 then
+
+        warn("================================")
+        warn("[AntiAFK] ❌ ไม่มี Server ที่ใช้ได้")
         warn(
-            "[AntiAFK] ❌ ไม่มี Server Cache ให้ใช้"
+            "[AntiAFK] Cache:",
+            getServerCacheCount()
         )
+        warn(
+            "[AntiAFK] Blocked:",
+            getBlockedJobCount()
+        )
+        warn("================================")
 
         getgenv().AntiAFKHopping = false
 
         return false
     end
 
-    cleanServerCache()
-
     -- =====================================================
-    -- HOP LOOP
+    -- สุ่ม JobId
     -- =====================================================
 
-    while true do
+    shuffle(validJobs)
 
-        local server =
-            getRandomCachedJob()
+    print(
+        "[AntiAFK] 🎲 พบ Server ที่ใช้ได้:",
+        #validJobs
+    )
 
-        -- =================================================
-        -- ไม่มี Server
-        -- =================================================
+    -- =====================================================
+    -- ลองตามลำดับที่สุ่ม
+    -- =====================================================
 
-        if not server then
-
-            warn("================================")
-            warn(
-                "[AntiAFK] ❌ ไม่มี Server ที่ใช้ได้"
-            )
-            warn(
-                "[AntiAFK] Cache:",
-                getServerCacheCount()
-            )
-            warn(
-                "[AntiAFK] Blocked:",
-                getBlockedJobCount()
-            )
-            warn("================================")
-
-            getgenv().AntiAFKHopping = false
-
-            return false
-        end
+    for _, serverInfo in ipairs(validJobs) do
 
         local serverJobId =
-            server.JobId
+            serverInfo.jobId
+
+        local playerCount =
+            serverInfo.playerCount
 
         print("================================")
-        print(
-            "[AntiAFK] 🎲 สุ่ม Server สำเร็จ"
-        )
-        print(
-            "[AntiAFK] JobId:",
-            serverJobId
-        )
-        print(
-            "[AntiAFK] Players:",
-            server.Playing
-            .. "/"
-            .. server.MaxPlayers
-        )
-        print(
-            "[AntiAFK] Free Slots:",
-            server.FreeSlots
-        )
+        print("[AntiAFK] 🎯 สุ่มเลือก Server")
+        print("[AntiAFK] JobId:", serverJobId)
+        print("[AntiAFK] Players:", playerCount)
         print("================================")
-
-        -- =================================================
-        -- TELEPORT RESULT
-        -- =================================================
 
         local teleportFailed = false
         local teleportResult = nil
@@ -867,7 +675,6 @@ local function serverHop()
                     teleportFailed = true
                     teleportResult = result
                     teleportMessage = message
-
                 end
             )
 
@@ -888,34 +695,17 @@ local function serverHop()
 
             end)
 
-        -- =================================================
-        -- TELEPORT CALL ERROR
-        -- =================================================
-
         if not callSuccess then
 
             warn("================================")
-            warn(
-                "[AntiAFK] ❌ Teleport Call Error"
-            )
-            warn(
-                "[AntiAFK] JobId:",
-                serverJobId
-            )
-            warn(
-                "[AntiAFK] Error:",
-                callError
-            )
+            warn("[AntiAFK] ❌ Teleport Call Error")
+            warn("[AntiAFK] JobId:", serverJobId)
+            warn("[AntiAFK] Error:", callError)
             warn("================================")
 
             if connection then
                 connection:Disconnect()
             end
-
-            -- ลบตัวที่ใช้ไม่ได้ออกจาก Memory
-            serverCache[serverJobId] = nil
-
-            saveServerCache()
 
             task.wait(
                 HOP_RETRY_DELAY
@@ -952,33 +742,18 @@ local function serverHop()
         if teleportFailed then
 
             warn("================================")
-            warn(
-                "[AntiAFK] ❌ Teleport ไม่สำเร็จ"
-            )
-            warn(
-                "[AntiAFK] JobId:",
-                serverJobId
-            )
+            warn("[AntiAFK] ❌ Teleport ไม่สำเร็จ")
+            warn("[AntiAFK] JobId:", serverJobId)
             warn(
                 "[AntiAFK] Result:",
-                tostring(
-                    teleportResult
-                )
+                tostring(teleportResult)
             )
             warn(
                 "[AntiAFK] Message:",
-                tostring(
-                    teleportMessage
-                )
+                tostring(teleportMessage)
             )
-            warn(
-                "[AntiAFK] 🗑️ ลบ JobId นี้ออกจาก Cache"
-            )
+            warn("[AntiAFK] 🔄 ลอง JobId ที่สุ่มตัวถัดไป")
             warn("================================")
-
-            serverCache[serverJobId] = nil
-
-            saveServerCache()
 
             task.wait(
                 HOP_RETRY_DELAY
@@ -988,24 +763,30 @@ local function serverHop()
         end
 
         -- =================================================
-        -- TELEPORT SENT
+        -- SUCCESS
         -- =================================================
 
         print("================================")
-        print(
-            "[AntiAFK] 📡 ส่ง Teleport แล้ว"
-        )
-        print(
-            "[AntiAFK] Target JobId:",
-            serverJobId
-        )
-        print(
-            "[AntiAFK] ⏳ รอเข้า Server ใหม่..."
-        )
+        print("[AntiAFK] 📡 ส่ง Teleport แล้ว")
+        print("[AntiAFK] JobId:", serverJobId)
+        print("[AntiAFK] Players:", playerCount)
+        print("[AntiAFK] ⏳ รอเข้า Server ใหม่...")
         print("================================")
 
         return true
     end
+
+    -- =====================================================
+    -- ไม่มีตัวไหนเข้าได้
+    -- =====================================================
+
+    warn("================================")
+    warn("[AntiAFK] ❌ ลองทุก JobId แล้วแต่เข้าไม่ได้")
+    warn("================================")
+
+    getgenv().AntiAFKHopping = false
+
+    return false
 end
 
 -- =========================================================
@@ -1015,39 +796,15 @@ end
 loadServerCache()
 
 -- =========================================================
--- UPDATE CURRENT SERVER
+-- UPDATE CURRENT SERVER ตอนเริ่ม
 -- =========================================================
--- บันทึก Server ปัจจุบันทันทีตอนเริ่ม
--- จากนั้นอัปเดตทุก 10 นาที
+
+-- ถ้า Current Job ยังไม่ Block
+-- จะบันทึก JobId + จำนวนคนทันที
 
 if not isBlockedJob(game.JobId) then
     updateCurrentServerCache()
 end
-
--- =========================================================
--- AUTO UPDATE CACHE EVERY 10 MINUTES
--- =========================================================
-
-task.spawn(function()
-
-    print(
-        "[AntiAFK] ⏱️ Cache Auto Update: ทุก 10 นาที"
-    )
-
-    while getgenv().AntiAFKRunning do
-
-        task.wait(
-            SERVER_CACHE_UPDATE_INTERVAL
-        )
-
-        if not getgenv().AntiAFKRunning then
-            break
-        end
-
-        updateCurrentServerCache()
-
-    end
-end)
 
 -- =========================================================
 -- CURRENT JOB CHECK
@@ -1056,20 +813,17 @@ end)
 if isBlockedJob(game.JobId) then
 
     print("================================")
-    print(
-        "[AntiAFK] ⚠️ BLOCKED JOB DETECTED"
-    )
-    print(
-        "[AntiAFK] JobId:",
-        game.JobId
-    )
-    print(
-        "[AntiAFK] 🚫 Server นี้ถูก Block"
-    )
-    print(
-        "[AntiAFK] 🔄 สุ่มจาก server_cache.txt"
-    )
+    print("[AntiAFK] ⚠️ BLOCKED JOB DETECTED")
+    print("[AntiAFK] JobId:", game.JobId)
+    print("[AntiAFK] 🚫 Server นี้ถูก Block")
+    print("[AntiAFK] 🔄 เตรียมสุ่ม Server จาก Cache")
     print("================================")
+
+    -- สำคัญ:
+    -- ไม่เพิ่ม Current Job ลง Cache
+    serverCache[game.JobId] = nil
+
+    saveServerCache()
 
     task.spawn(function()
 
@@ -1089,6 +843,44 @@ else
 end
 
 -- =========================================================
+-- SERVER CACHE AUTO UPDATE
+-- ทุก 10 นาที
+-- =========================================================
+
+task.spawn(function()
+
+    while getgenv().AntiAFKRunning do
+
+        task.wait(
+            SERVER_CACHE_UPDATE_INTERVAL
+        )
+
+        if not getgenv().AntiAFKRunning then
+            break
+        end
+
+        print("================================")
+        print("[AntiAFK] ⏱️ ครบ 10 นาที")
+        print("[AntiAFK] 🔄 อัปเดต Server Cache")
+        print("[AntiAFK] JobId:", game.JobId)
+        print(
+            "[AntiAFK] Players:",
+            #Players:GetPlayers()
+        )
+        print("================================")
+
+        -- โหลดก่อนเพื่อป้องกันข้อมูลเก่า
+        loadServerCache()
+
+        -- ลบ Blocked Job ออกจาก Cache
+        removeBlockedJobsFromCache()
+
+        -- เพิ่ม/อัปเดต Current Job
+        updateCurrentServerCache()
+    end
+end)
+
+-- =========================================================
 -- WAIT FOR CHARACTER
 -- =========================================================
 
@@ -1103,7 +895,6 @@ if not character then
 
     character =
         Player.CharacterAdded:Wait()
-
 end
 
 local root =
@@ -1203,7 +994,6 @@ Player.CharacterAdded:Connect(
                     "HumanoidRootPart",
                     30
                 )
-
         end)
     end
 )
@@ -1350,7 +1140,7 @@ while getgenv().AntiAFKRunning do
             )
 
             -- =================================================
-            -- BLOCK CURRENT JOB
+            -- SAVE BLOCKED JOB
             -- =================================================
 
             addBlockedJob(
@@ -1358,15 +1148,22 @@ while getgenv().AntiAFKRunning do
             )
 
             -- =================================================
-            -- REMOVE CURRENT JOB FROM CACHE
+            -- ลบ JobId นี้ออกจาก Server Cache ทันที
             -- =================================================
 
-            removeBlockedJobFromCache(
-                currentJobId
-            )
+            if serverCache[currentJobId] ~= nil then
+
+                serverCache[currentJobId] = nil
+
+                print(
+                    "[AntiAFK] 🧹 ลบ Blocked Job ออกจาก Server Cache"
+                )
+
+                saveServerCache()
+            end
 
             print(
-                "[AntiAFK] 💾 ลบ JobId ออกจาก Server Cache แล้ว"
+                "[AntiAFK] 💾 บันทึก Blocked JobId แล้ว"
             )
 
             print(
