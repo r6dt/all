@@ -26,10 +26,16 @@ local JOB_FILE = "antiafk_jobs.txt"
 -- Server Cache
 local SERVER_CACHE_FILE = "server_cache.txt"
 
--- อัปเดต Server ปัจจุบันทุก 5 นาที
-local SERVER_CACHE_UPDATE_INTERVAL = 300
+-- =========================================================
+-- อัปเดต Server ปัจจุบันทุก 2 นาที
+-- =========================================================
 
+local SERVER_CACHE_UPDATE_INTERVAL = 120
+
+-- =========================================================
 -- Cache หมดอายุหลัง 1 ชั่วโมง
+-- =========================================================
+
 local SERVER_CACHE_EXPIRE_TIME = 3600
 
 -- Hop
@@ -521,6 +527,12 @@ local function loadServerCache()
         "[^\r\n]+"
     ) do
 
+        -- =================================================
+        -- FORMAT:
+        --
+        -- JobId|Players|MaxPlayers|Timestamp
+        -- =================================================
+
         local jobId,
             playerCount,
             maxPlayers,
@@ -605,6 +617,10 @@ local function loadServerCache()
                 duplicateCount += 1
                 fileNeedsCleanup = true
 
+                -- =================================================
+                -- ถ้าซ้ำ ให้เก็บ Timestamp ใหม่กว่า
+                -- =================================================
+
                 if timestamp >
                     serverCache[jobId].timestamp
                 then
@@ -653,6 +669,13 @@ local function loadServerCache()
     print("[AntiAFK] Expired:", expiredCount)
     print("================================")
 
+    -- =====================================================
+    -- สำคัญ:
+    --
+    -- ถ้ามี Expired / Blocked / Duplicate
+    -- เขียน server_cache.txt ใหม่ทันที
+    -- =====================================================
+
     if fileNeedsCleanup then
 
         print(
@@ -680,6 +703,10 @@ local function removeExpiredCache()
 
     for jobId, data in pairs(serverCache) do
 
+        -- =================================================
+        -- BLOCKED
+        -- =================================================
+
         if isBlockedJob(jobId) then
 
             serverCache[jobId] = nil
@@ -691,6 +718,10 @@ local function removeExpiredCache()
                 tonumber(
                     data.timestamp
                 ) or 0
+
+            -- =================================================
+            -- EXPIRED
+            -- =================================================
 
             if timestamp <= 0
                 or now - timestamp
@@ -748,6 +779,10 @@ local function updateCurrentServerCache()
 
     end
 
+    -- =====================================================
+    -- Blocked ห้ามบันทึก
+    -- =====================================================
+
     if isBlockedJob(
         currentJobId
     ) then
@@ -763,11 +798,19 @@ local function updateCurrentServerCache()
         return false
     end
 
+    -- =====================================================
+    -- จำนวนผู้เล่น
+    -- =====================================================
+
     local playerCount =
         #Players:GetPlayers()
 
     local maxPlayers =
         Players.MaxPlayers or 0
+
+    -- =====================================================
+    -- Timestamp ใหม่ทุกครั้งที่ UPDATE
+    -- =====================================================
 
     local timestamp =
         os.time()
@@ -875,6 +918,10 @@ local function getValidCachedJobs()
 
                 local age =
                     now - timestamp
+
+                -- =================================================
+                -- ต้องไม่เกิน 1 ชั่วโมง
+                -- =================================================
 
                 if age >= 0
                     and age <
@@ -997,6 +1044,7 @@ local function serverHop()
 
     -- =====================================================
     -- SORT
+    --
     -- คนน้อย -> คนเยอะ
     --
     -- ถ้าจำนวนคนเท่ากัน:
@@ -1337,6 +1385,10 @@ if isBlockedJob(
 
     print("================================")
 
+    -- =====================================================
+    -- ลบ Current Job ออกจาก Cache
+    -- =====================================================
+
     serverCache[
         game.JobId
     ] = nil
@@ -1379,7 +1431,7 @@ task.spawn(function()
         print("================================")
 
         print(
-            "[AntiAFK] ⏱️ ครบ 5 นาที"
+            "[AntiAFK] ⏱️ ครบ 2 นาที"
         )
 
         print(
@@ -1416,6 +1468,8 @@ task.spawn(function()
 
         -- =================================================
         -- UPDATE Current Job
+        --
+        -- Timestamp จะถูกรีเฟรช
         -- =================================================
 
         updateCurrentServerCache()
