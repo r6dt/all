@@ -1,89 +1,54 @@
-getgenv().GGFX_MODE = 1 --1 = REMOVE_TEXTURES : more stable! but no visuals, 2: see some stuff, 3: see all
-getgenv().GRANK_FIRST = false --if you use this you have to define GREBIRTH_TO and GRANK_TO
-getgenv().GRANK_TO = 11
-getgenv().GFOCUS_RANK_TO = 11
-getgenv().GZONE_TO = 274
-getgenv().GMAX_EGG_SLOTS = 99
-getgenv().GMAX_EQUIP_SLOTS = 99
-getgenv().GMAX_ZONE_UPGRADE_COST = 200000
-
-getgenv().GDO_LUCKY_WORLD_EVENT = true
-getgenv().GMAKE_HORSESHOE_GIFTS = true
-getgenv().GLIMIT_HORSESHOE_GIFTS = 99999999 -- choose yourself, don't set it lower than your MinAmount in your Horseshoe Gift mailrule!
-getgenv().GDO_BOSSES = {1,2,3}
-getgenv().GHEROIC_BOSSES  = {1,2}
-getgenv().GMYTHIC_BOSSES  = {1}
-getgenv().GUSE_BOOSTS = true
-getgenv().GSKIP_RAID_EGG = true
-getgenv().GMINUTE_HATCH_RAID_EGG = true
-getgenv().GMIN_MULTIPLIER = 300 -- min required multiplier of raid egg to hatch
-getgenv().GRAID_MAX_HATCH_MINUTES = 5 -- abort hatching after 5 min
-getgenv().GDISABLE_MINUTE_HATCH = false
-getgenv().GRAID_TIMEOUT_MINUTES = 60
-getgenv().GRAID_MAX_BREAKABLE_HEALTH = "999qt"
-getgenv().GAUTO_RAID = true
-getgenv().GHATCH_LOBBY = true
-getgenv().GUSE_LEPRECHAUN_KEYS = false
-getgenv().GMAX_RAID_LEVEL = 50000
-getgenv().GRESET_UPGRADES = true -- only do true when you actually need a reset
-getgenv().GEVENT_UPGRADES = {
-    { Id = "LuckyRaidDamage", MaxTier = 100 },
-    { Id = "LuckyRaidAttackSpeed", MaxTier = 100 },
-    { Id = "LuckyRaidPets", MaxTier = 100 },
-    { Id = "LuckyRaidEggCost", MaxTier = 100 },
-    { Id = "LuckyRaidMoreCurrency", MaxTier = 2 },
-    { Id = "LuckyRaidBetterLoot", MaxTier = 100 },
-    { Id = "LuckyRaidTitanicChest", MaxTier = 100 },
-    { Id = "LuckyRaidHugeChest", MaxTier = 5 },
-    { Id = "LuckyRaidXP", MaxTier = 100 },
-    { Id = "LuckyRaidPetSpeed", MaxTier = 0 },
-    { Id = "LuckyRaidKeyDrops", MaxTier = 0 },
-    { Id = "LuckyRaidBossHugeChances", MaxTier = 0 },
-    { Id = "LuckyRaidBossTitanicChances", MaxTier = 100 },
+-- General:
+setfpscap(5)
+getgenv().GGFX_MODE = 1
+getgenv().GGFX_TEST1 = true -- test for less cpu
+getgenv().GZONE_TO = 1 -- to enter event from W1 put 1, from W2 put 100, from W3 200, from W4 240
+getgenv().GLOAD_INSTANCE_TIMEOUT = 60
+-- Event Related:
+getgenv().GDO_LUCKY_BREAKOUT  = true
+getgenv().GLUCKY_BREAKOUT_STOP_REBIRTHING_AT = 250
+getgenv().GTIMED_BOOSTS = 
+{
+	{ Id = "Lucky Damage Boost", MaxTier = 1 }, --max is 2
+	{ Id = "Lucky Speed Boost", MaxTier = 1 }, --max is 2
+	{ Id = "Lucky Egg Booster", MaxTier = 1 }, --max is 2
 }
-getgenv().GLOOTBOXES = {"Locked Hype Egg","Horseshoe Gift"}
-getgenv().GKICK_ON_STAFF = true
-getgenv().GAUTO_UPGRADE_PETS = true
-getgenv().GHATCH_CHARGED_EGGS = false
-getgenv().GHATCH_GOLDEN_EGGS = false
-getgenv().GCLEAR_FAVORITE_PETS = true
-getgenv().GHATCH_SPEED_MS = 0
-getgenv().GMAX_HATCH = 99
-getgenv().GHUGE_COUNT = 99 -- amount of huges to keep/not mail
-getgenv().GDAYCARE = true
-getgenv().GDAYCARE_NAME_PARTS_TO_EXCLUDE = {"Palace Pooka", "Lucki Golem", "Lucki Chest Mimic", "Leprechaun Kitsune"}
-getgenv().GMAX_EGG_SLOTS = 99
-getgenv().GMAX_EQUIP_SLOTS = 99
-getgenv().GCOMBINE_KEYS = true -- ghep keys
-getgenv().GHOLD_GIFTS = false
-getgenv().GHOLD_BUNDLES = false
-getgenv().GCONSUME_SEED_BAGS = true
-getgenv().GOPEN_ITEMS_IN_BULK = true
-getgenv().GMAX_ZONE_UPGRADE_COST = 20000000
-getgenv().GCOLLECT_FREE_ITEMS = true
---getgenv().GIGNORE_ALL_INSTANCES = true
-getgenv().GIGNORE_ALL_INSTANCES = false
-getgenv().GIGNORE_SLEDRACE = false
-getgenv().GDO_DOODLE_BATTLE = false
-getgenv().GUSE_SPRINKLERS = true
-getgenv().GENCHANTS = {"Criticals","Walkspeed","Tap Power","Tap Power","Strong Pets","Chest Breaker","Happy Pets","Diamonds"}
---getgenv().GENCHANTS = {"Strong Pets", "Criticals", "Explosive", "Explosive", "Breakable Mayhem", "Breakable Mayhem", "Tap Power", "Lucky Eggs", "Criticals", "Strong Pets", "Treasure Hunter", "Diamonds", "Lucky Eggs", "Huge Hunter", "Fortune"} --leo rank
-getgenv().GUSE_ULTIMATES = {"UFO", "Tsunami", "Tornado", "Pet Surge", "Chest Spell","Ground Pound"}
-getgenv().GUSE_FLAGS = {"Fortune Flag","Diamonds Flag","Coins Flag"}
-getgenv().GFRUITS = {"Watermelon","Candycane","Apple","Rainbow","Pineapple","Orange","Banana"}
-getgenv().GPOTIONS = {"Coins","Lucky","The Cocktail","Huge","Treasure Hunter","Walkspeed","Diamonds","Damage"}
-getgenv().GPOTIONS_MAX_TIER = 99
+getgenv().GENCHANTS = {
+    "Lucky Eggs", "Lucky Eggs", "Lucky Eggs", "Lucky Eggs",
+    "Lucky Eggs", "Lucky Eggs", "Lucky Eggs", "Lucky Eggs",
+    "Lucky Eggs", "Lucky Eggs", "Lucky Eggs"
+}
+getgenv().GEVENT_UPGRADES = {
+	{ Id = "LuckyBreakoutBoardSlots", MaxTier = 45 }, -- still the strongest upgrade
+	{ Id = "LuckyBreakoutBallPower",   MaxTier = 4  }, -- start scaling damage
+	{ Id = "LuckyBreakoutBallSpeed",   MaxTier = 4  }, -- start scaling speed
+	{ Id = "LuckyBreakoutBuxBonus",    MaxTier = 1  }, -- low priority (only coins)
+	{ Id = "LuckyBreakoutEggTier",     MaxTier = 4  }, -- keep aiming for this
+	{ Id = "LuckyBreakoutGiftDrops",   MaxTier = 0  }, -- still skip
+}
+getgenv().GEVENT_UPGRADES_AFTER_TIER_4 = {
+	{ Id = "LuckyBreakoutBoardSlots", MaxTier = 100 }, -- still the strongest upgrade
+	{ Id = "LuckyBreakoutBallPower",   MaxTier = 10  }, -- start scaling damage
+	{ Id = "LuckyBreakoutBallSpeed",   MaxTier = 10  }, -- start scaling speed
+	{ Id = "LuckyBreakoutBuxBonus",    MaxTier = 10  }, -- low priority (only coins)
+	{ Id = "LuckyBreakoutEggTier",     MaxTier = 4  }, -- keep aiming for this
+	{ Id = "LuckyBreakoutGiftDrops",   MaxTier = 10  }, -- still skip
+}
+
+getgenv().GINVENTORY_COUNTS = {
+    ["BreakoutBucks"] = {Class = "Currency", Id = "BreakoutBucks"},
+    ["BreakoutCoins"] = {Class = "Currency", Id = "BreakoutCoins"},
+}
+-- General :
+--getgenv().GFIND_REMOTES = true
 getgenv().GWEBHOOK_USERID = ""
-getgenv().GWEBHOOK_LINK = "https://discord.com/api/webhooks/1345671807348510783/He9GfomJpuYn0UnM1ENpy78xzPlRvTH5CSepwkOa-6SmhzdV6Wm8yeqqo8jezs2Bi5NH"
+getgenv().GWEBHOOK_LINK = ""
 getgenv().GHUGE_COUNT = 0 -- amount of huges to keep/not mail
 getgenv().GMAIL_RECEIVERS = {"your-receiver-mule"}
 getgenv().GMAIL_ITEMS = {
-["Harvest egg"] = {Class = "Egg", Id = "Exclusive Egg 57", MinAmount = 1},
-["Lucki Chest Mimic"] = {Class = "Pet", Id = "Lucki Chest Mimic", IsRainbow = true, IsShiny = true, MinAmount = 2, KeepAmount = 1},	
-["Send Diamonds"] = {Class = "Currency", Id = "Diamonds", KeepAmount = "100m", MinAmount = "10m"}, -- mail diamonds, to enable lower MinAmount..
-["Hype Egg 2"] = {Class = "Lootbox", Id = "Hype Egg 2", MinAmount = 1},
-["Daycare egg 5"] = {Class = "Egg", Id = "Huge Machine Egg 5", MinAmount = 1},
-["Horseshoe Gift"] = {Class = "Lootbox", Id = "Horseshoe Gift", MinAmount = 100},
+["All Huges"] = {Class = "Pet", Id = "All Huges", MinAmount = 1},
+["Send Diamonds"] = {Class = "Currency", Id = "Diamonds", KeepAmount = "5m", MinAmount = "9999b"}, -- mail diamonds, to enable lower MinAmount..
 }
-getgenv().GMAX_MAIL_COST = "1m"
+getgenv().GMAX_MAIL_COST = "2m"
+task.wait(15) -- against stupid executes in a world where it shouldn't
 loadstring(game:HttpGet("https://api.luarmor.net/files/v3/loaders/34915da4ad87a5028e1fd64efbe3543f.lua"))()
