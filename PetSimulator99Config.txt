@@ -3,7 +3,7 @@ getgenv().GPROGRESS_MODE = "Hybrid"
 --getgenv().GHOP_ON_STAFF = true
 getgenv().GGFX_MODE = 1  --2 = LOW_GFX: still see what they do, 1 = REMOVE_GFX : no visuals, 3 = FULL_GFX
 getgenv().GRANK_TO = 11 -- Set your desired rank
-getgenv().GFOCUS_RANK_TO = 11 --focus on ranking faster till this rank before going to your chosen GZONE_TO
+getgenv().GFOCUS_RANK_TO = 5 --focus on ranking faster till this rank before going to your chosen GZONE_TO
 getgenv().GZONE_TO = 220 -- FOR NEW fresh accounts I would put 230 but PLEASE READ FAQ about this property!!! it's important to understand. 99 means last zone W1 only!! 999: go to final zone of game
 getgenv().GMAX_EGG_SLOTS = 99
 getgenv().GMAX_EQUIP_SLOTS = 99
