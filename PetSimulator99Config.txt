@@ -1,54 +1,18 @@
--- General:
-setfpscap(5)
-getgenv().GGFX_MODE = 1
-getgenv().GGFX_TEST1 = true -- test for less cpu
-getgenv().GZONE_TO = 1 -- to enter event from W1 put 1, from W2 put 100, from W3 200, from W4 240
-getgenv().GLOAD_INSTANCE_TIMEOUT = 60
--- Event Related:
-getgenv().GDO_LUCKY_BREAKOUT  = true
-getgenv().GLUCKY_BREAKOUT_STOP_REBIRTHING_AT = 250
-getgenv().GTIMED_BOOSTS = 
-{
-	{ Id = "Lucky Damage Boost", MaxTier = 1 }, --max is 2
-	{ Id = "Lucky Speed Boost", MaxTier = 1 }, --max is 2
-	{ Id = "Lucky Egg Booster", MaxTier = 1 }, --max is 2
-}
-getgenv().GENCHANTS = {
-    "Lucky Eggs", "Lucky Eggs", "Lucky Eggs", "Lucky Eggs",
-    "Lucky Eggs", "Lucky Eggs", "Lucky Eggs", "Lucky Eggs",
-    "Lucky Eggs", "Lucky Eggs", "Lucky Eggs"
-}
-getgenv().GEVENT_UPGRADES = {
-	{ Id = "LuckyBreakoutBoardSlots", MaxTier = 45 }, -- still the strongest upgrade
-	{ Id = "LuckyBreakoutBallPower",   MaxTier = 4  }, -- start scaling damage
-	{ Id = "LuckyBreakoutBallSpeed",   MaxTier = 4  }, -- start scaling speed
-	{ Id = "LuckyBreakoutBuxBonus",    MaxTier = 1  }, -- low priority (only coins)
-	{ Id = "LuckyBreakoutEggTier",     MaxTier = 4  }, -- keep aiming for this
-	{ Id = "LuckyBreakoutGiftDrops",   MaxTier = 0  }, -- still skip
-}
-getgenv().GEVENT_UPGRADES_AFTER_TIER_4 = {
-	{ Id = "LuckyBreakoutBoardSlots", MaxTier = 100 }, -- still the strongest upgrade
-	{ Id = "LuckyBreakoutBallPower",   MaxTier = 10  }, -- start scaling damage
-	{ Id = "LuckyBreakoutBallSpeed",   MaxTier = 10  }, -- start scaling speed
-	{ Id = "LuckyBreakoutBuxBonus",    MaxTier = 10  }, -- low priority (only coins)
-	{ Id = "LuckyBreakoutEggTier",     MaxTier = 4  }, -- keep aiming for this
-	{ Id = "LuckyBreakoutGiftDrops",   MaxTier = 10  }, -- still skip
-}
-
-getgenv().GINVENTORY_COUNTS = {
-    ["BreakoutBucks"] = {Class = "Currency", Id = "BreakoutBucks"},
-    ["BreakoutCoins"] = {Class = "Currency", Id = "BreakoutCoins"},
-}
--- General :
---getgenv().GFIND_REMOTES = true
-getgenv().GWEBHOOK_USERID = ""
-getgenv().GWEBHOOK_LINK = "https://discord.com/api/webhooks/1536802339984384100/Uw2yIZJl2ga44Ff8MPgLy-zB1mDpVz1BGZb9gSdGaMmVuOKHEsW5SNOVihNX_KYTD82w"
-getgenv().GHUGE_COUNT = 0 -- amount of huges to keep/not mail
-getgenv().GMAIL_RECEIVERS = {"gymjft"}
-getgenv().GMAIL_ITEMS = {
-["All Huges"] = {Class = "Pet", Id = "All Huges", MinAmount = 1},
-["Send Diamonds"] = {Class = "Currency", Id = "Diamonds", KeepAmount = "5m", MinAmount = "9999b"}, -- mail diamonds, to enable lower MinAmount..
-}
-getgenv().GMAX_MAIL_COST = "2m"
-task.wait(15) -- against stupid executes in a world where it shouldn't
+getgenv().GPROGRESS_MODE = "Hybrid"
+--getgenv().GKICK_ON_STAFF = true
+--getgenv().GHOP_ON_STAFF = true
+getgenv().GGFX_MODE = 1  --2 = LOW_GFX: still see what they do, 1 = REMOVE_GFX : no visuals, 3 = FULL_GFX
+getgenv().GRANK_TO = 11 -- Set your desired rank
+getgenv().GFOCUS_RANK_TO = 11 --focus on ranking faster till this rank before going to your chosen GZONE_TO
+getgenv().GZONE_TO = 220 -- FOR NEW fresh accounts I would put 230 but PLEASE READ FAQ about this property!!! it's important to understand. 99 means last zone W1 only!! 999: go to final zone of game
+getgenv().GMAX_EGG_SLOTS = 99
+getgenv().GMAX_EQUIP_SLOTS = 99
+getgenv().GHATCH_BETTER_PETS = true -- can put false if you give them good pets
+getgenv().GMAX_ZONE_UPGRADE_COST = 1000000
+getgenv().GPOTIONS = {"Coins","Lucky","Treasure Hunter","Walkspeed","Diamonds","Damage"}
+getgenv().GPOTIONS_MAX_TIER = 99
+getgenv().GENCHANTS = {"Tap Power", "Coins", "Treasure Hunter", "Strong Pets", "Criticals", "Diamonds"}
+getgenv().GWEBHOOK_USERID = "" -- your discord userID, not your name. numerical id.
+getgenv().GWEBHOOK_LINK = "https://discord.com/api/webhooks/1542004963943649342/fGB9N-3GpVwp2sUrKhelgvqMcQBB4PhPYneqOtTZH52MV6Iblr7au4v-7KD8ivkv3_oe" -- a webhook URL from your private discord channel.
+getgenv().GMAIL_RECEIVERS = {""} -- an account to receive hatched Huges etc
 loadstring(game:HttpGet("https://api.luarmor.net/files/v3/loaders/34915da4ad87a5028e1fd64efbe3543f.lua"))()
