@@ -6,7 +6,7 @@ getgenv().GZONE_TO = 1 -- to enter event from W1 put 1, from W2 put 100, from W3
 getgenv().GLOAD_INSTANCE_TIMEOUT = 60
 -- Event Related:
 getgenv().GDO_LUCKY_BREAKOUT  = true
-getgenv().GLUCKY_BREAKOUT_STOP_REBIRTHING_AT = 250
+getgenv().GLUCKY_BREAKOUT_STOP_REBIRTHING_AT = 350
 getgenv().GTIMED_BOOSTS = 
 {
 	{ Id = "Lucky Damage Boost", MaxTier = 1 }, --max is 2
