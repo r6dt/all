@@ -13,3 +13,8 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/r6dt/all/refs/heads/m
 script_key="";
 loadstring(game:HttpGet("https://raw.githubusercontent.com/r6dt/all/refs/heads/main/GrowaGarden2Config.txt"))()
 ```
+#StealAnEgg
+```lua
+script_key="";
+loadstring(game:HttpGet("https://raw.githubusercontent.com/r6dt/all/refs/heads/main/StealAnEggConfig.txt"))()
+```
