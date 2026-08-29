@@ -12,6 +12,7 @@ _G.HamsterConfig = {
     MoveSpeed = 700,
     RequirePatch = false,
     AutoWeakMode = false,
+    RunFirst = false,
     SkipWeak = false,
     SkipWorseThanPen = false,
     PinHold = true,
@@ -35,9 +36,7 @@ _G.HamsterConfig = {
     --     พิมพ์เล็กใหญ่ไม่เกี่ยง  ใส่ลูกน้ำได้ "1,500,000"
     -- 0 = ไม่สนราคา ขายตามอันดับล้วนๆ (ตัวที่ทำเงินน้อยสุดโดนขายก่อน)
     KeepAbove = 0,
-
-    -- ไข่ที่ทำเงินต่ำกว่านี้ไม่ต้องออกไปเก็บ  เขียนแบบเดียวกับ KeepAbove ได้
-    -- 0 = คิดให้เอง
+    -- 0 = อันล่างนี้ไม่ต้องยุ่งใส่มาให้ดูหลอนเฉยๆ
     MinEggRate = 0,
     TripReserve = 40,
 
@@ -58,4 +57,5 @@ _G.HamsterConfig = {
     AntiAFK = true,
     AutoSaveConfig = false,
 }
+
 loadstring(game:HttpGet("https://api.luarmor.net/files/v4/loaders/663afda8ed216fab2bc492c638576b26.lua"))()
