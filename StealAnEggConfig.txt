@@ -1,5 +1,13 @@
 getgenv().Config = {
     Enabled = true,
     Rarity = {"Divine","Eternal","Secret"},
+    AutoHatch = true,
+    AutoSell = true,
+    UseRarity = true,
+    StealMode = "Rarity", -- Min, Rarity , Best
+    SellMode = "Min",
+    FPS = 10,
+    MinSell = 1000000,
+    MinSteal = 5000000,
 }
 loadstring(game:HttpGet("https://api.jnkie.com/api/v1/luascripts/public/9c7363ea44dae59ca4bb06704560034984c15e2be63e17b1d087dfb0abb9baff/download"))()
