@@ -18,7 +18,7 @@ getgenv().Config = {
     SellMode = "Min",
     FPS = 10,
     SellBelow = 1000000,
-    MinSteal = 5000000,
+    MinSteal = 10,
 
     WebhookUrl = "",
     SendWebhook = false,
