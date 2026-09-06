@@ -15,6 +15,9 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/r6dt/all/refs/heads/m
 ```
 #StealAnEgg
 ```lua
+repeat task.wait() until game:IsLoaded()
+repeat task.wait() until game.Players
+repeat task.wait() until game.Players.LocalPlayer
 script_key="";
 loadstring(game:HttpGet("https://raw.githubusercontent.com/r6dt/all/refs/heads/main/StealAnEggConfig.txt"))()
 ```
