@@ -7,7 +7,7 @@ until game.Players
 repeat
     task.wait()
 until game.Players.LocalPlayer
-task.wait(30) -- ระยะเวลารอ ถ้าเปิดหลายจอเเนะนำให้ตั้งเป็น 20 วิ
+task.wait(20) -- ระยะเวลารอ ถ้าเปิดหลายจอเเนะนำให้ตั้งเป็น 20 วิ
 getgenv().Config = {
     Enabled = true,
     Rarity = {"Divine","Eternal","Secret"},
@@ -18,7 +18,7 @@ getgenv().Config = {
     SellMode = "Min",
     FPS = 10,
     SellBelow = 1000000,
-    MinSteal = 10,
+    MinSteal = 1000000,
 
     WebhookUrl = "",
     SendWebhook = false,
