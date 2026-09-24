@@ -8,6 +8,10 @@ local CONFIG = {
     RejoinRetrySeconds = 30, -- พักก่อนลองใหม่ เมื่อ Roblox แจ้งวาร์ปล้มเหลว
     Receiver = "zPr4m0t",
     Items = {"Jackpot Spin", "Gems", "Trait Reroll"},
+    TradeMinimums = {
+        ["Gems"] = 100, -- ตัวอย่าง: Gems 100 ขึ้นไป จึงส่ง Gems
+        ["Trait Reroll"] = 100, -- ตัวอย่าง: Trait Reroll 100 ขึ้นไป จึงส่ง Trait Reroll
+    },
     AutochangeEnabled = true, -- true = Autochange when Jackpot Spin is zero after first Jackpot was saved; other Items do not block it
     PlaceId = 113290951185459,
     ObserveSeconds = 10,
@@ -19,7 +23,8 @@ local CONFIG = {
     ToFolderId = "afbf6dd712c435e44981a0959a093fb30b3aa391eeb803647804d6e95dfc167f",
     WithoutReplacement = false,
     JackpotStateFolder = "JackpotTradeState", -- executor workspace folder สำหรับจำว่าไอดีนี้เคยมี Jackpot Spin แล้ว
-    MinJackpotToHop = 1, -- Hop ไปหา Receiver เฉพาะเมื่อ Jackpot Spin >= 2 (Items อื่นไม่ทำให้ Hop)
+    MinJackpotToHop = 1, -- Jackpot Spin >= 1: Hop กลับไปหา Receiver; Gems/Trait Reroll ไม่กระตุ้น Hop
+    AvoidReceiverAtZeroEnabled = true, -- Jackpot = 0 และ Receiver อยู่เซิร์ฟเดียวกัน: Hop ออกทันที (ก่อนเคยได้ Jackpot)
     OnePlayerHopEnabled = true, -- true = หาเซิร์ฟเวอร์ที่มีผู้เล่นอยู่ 1 คนก่อนเราเข้า; false = ปิด
     OnePlayerHopIntervalSeconds = 15 * 60, -- 15 นาทีต่อการ Hop สำเร็จ/ที่เริ่มส่งคำขอ
     OnePlayerHopRetrySeconds = 30, -- พักก่อนลองใหม่เมื่อหาเซิร์ฟเวอร์ไม่ได้หรือ Teleport ล้มเหลว
@@ -196,6 +201,12 @@ local function main()
         wanted[name] = true
     end
     assert(next(wanted), "CONFIG.Items is empty")
+    assert(type(CONFIG.TradeMinimums) == "table", "TradeMinimums must be a table")
+    for itemName, minimum in pairs(CONFIG.TradeMinimums) do
+        assert(wanted[itemName], "TradeMinimums item is not in CONFIG.Items: " .. tostring(itemName))
+        assert(type(minimum) == "number" and minimum >= 1 and minimum < math.huge
+            and minimum % 1 == 0, "TradeMinimums must contain positive integer amounts")
+    end
     assert(type(CONFIG.MinJackpotToHop) == "number" and CONFIG.MinJackpotToHop >= 1
         and CONFIG.MinJackpotToHop % 1 == 0, "MinJackpotToHop must be a positive integer")
 
@@ -415,8 +426,9 @@ local function main()
     end
 
     -- เดินหาเซิร์ฟเวอร์คนน้อยทุก 15 นาที โดยไม่ขัดจังหวะเทรดหรือวาร์ปหา Receiver
-    local function findOnePlayerServer()
+    local function findOnePlayerServer(allowOtherPlayerCounts)
         local cursor
+        local fallback -- ใช้เฉพาะตอนต้องออกจากเซิร์ฟ Receiver แต่หาเซิร์ฟ 1 คนไม่เจอ
         for _ = 1, CONFIG.OnePlayerHopMaxPages do
             local url = "https://games.roblox.com/v1/games/" .. tostring(CONFIG.PlaceId)
                 .. "/servers/Public?sortOrder=Asc&limit=100"
@@ -426,17 +438,20 @@ local function main()
             local candidates = {}
             for _, server in ipairs(page.data) do
                 if type(server) == "table" and type(server.id) == "string" and server.id ~= ""
-                    and server.id ~= game.JobId
-                    and tonumber(server.playing) == CONFIG.OnePlayerHopTargetPlayers
+                    and server.id ~= game.JobId and tonumber(server.playing)
                     and tonumber(server.maxPlayers) and tonumber(server.maxPlayers) > tonumber(server.playing) then
-                    table.insert(candidates, server.id)
+                    if tonumber(server.playing) == CONFIG.OnePlayerHopTargetPlayers then
+                        table.insert(candidates, server.id)
+                    elseif allowOtherPlayerCounts and not fallback then
+                        fallback = server.id
+                    end
                 end
             end
             if #candidates > 0 then return candidates[math.random(1, #candidates)] end
             cursor = page.nextPageCursor
             if type(cursor) ~= "string" or cursor == "" then break end
         end
-        return nil
+        return fallback
     end
 
     local function onePlayerHopAllowed()
@@ -446,12 +461,77 @@ local function main()
         local amount = jackpotAmount()
         if amount >= CONFIG.MinJackpotToHop then return false end -- ให้ Receiver มาก่อน
         if amount == 0 and jackpotUnlocked and CONFIG.AutochangeEnabled then return false end
+        -- หาก Receiver เข้ามาตอน Jackpot = 0 ให้ระบบออกจากเซิร์ฟทันทีเป็นผู้จัดการแทนรอบ 15 นาที
+        if CONFIG.AvoidReceiverAtZeroEnabled and amount == 0 and receiverHere() then return false end
         return true
     end
 
     local function saveOnePlayerHopTime(timestamp)
         writefile(onePlayerHopStateFile, tostring(timestamp))
         lastOnePlayerHopAt = timestamp
+    end
+
+    -- หาก Receiver มาอยู่เซิร์ฟเดียวกันขณะยังไม่มี Jackpot ให้หนีไปเซิร์ฟอื่นก่อน
+    -- ทำงานแยกจากนาฬิกา 15 นาที และไม่รบกวน Autochange หลัง Jackpot ถูกเทรดออก
+    local lastAvoidReceiverAttempt = -math.huge
+    local function avoidReceiverWhenJackpotZero()
+        if receiverMode or not CONFIG.AvoidReceiverAtZeroEnabled or env.JackpotTradeOnlyStop
+            or intentionalExit or changed or teleportInProgress or activePartner or tradeBusy
+            or not receiverHere() or jackpotAmount() ~= 0 then return false end
+        if jackpotUnlocked and CONFIG.AutochangeEnabled then return false end -- Autochange มาก่อน
+        if os.clock() - lastAvoidReceiverAttempt < CONFIG.OnePlayerHopRetrySeconds then return false end
+
+        lastAvoidReceiverAttempt = os.clock()
+        teleportInProgress = true -- จองสิทธิ์ก่อนค้นหาเซิร์ฟ ป้องกัน Hop 15 นาทีทำงานซ้อน
+        local ok, serverId = pcall(findOnePlayerServer, true) -- เลือกเซิร์ฟ 1 คนก่อน ถ้าไม่มีใช้เซิร์ฟอื่นที่ยังว่าง
+        if not ok or not serverId then
+            teleportInProgress = false
+            warn("[AvoidReceiver] No alternate server available:", not ok and serverId or "not found")
+            return false
+        end
+
+        -- เช็คสดหลัง API ตอบกลับ: หากมี Jackpot แล้ว ห้ามหนี เพราะควรไปหา Receiver เพื่อเทรด
+        if env.JackpotTradeOnlyStop or changed or not receiverHere() or jackpotAmount() ~= 0
+            or activePartner or tradeBusy or (jackpotUnlocked and CONFIG.AutochangeEnabled) then
+            teleportInProgress = false
+            return false
+        end
+
+        -- นับรอบ Hop 15 นาทีใหม่หลังออกจาก Receiver เพื่อไม่ให้เพิ่งเข้าเซิร์ฟแล้ว Hop ซ้ำทันที
+        local stamped, stampErr = pcall(saveOnePlayerHopTime, os.time())
+        if not stamped then
+            teleportInProgress = false
+            warn("[AvoidReceiver] Could not save hop time:", stampErr)
+            return false
+        end
+
+        local failed, failureText = false, ""
+        teleportConnection = TS.TeleportInitFailed:Connect(function(target, result, message)
+            if target == player then
+                failed = true
+                failureText = tostring(result) .. ": " .. tostring(message)
+            end
+        end)
+        log("[AvoidReceiver] Jackpot Spin = 0 and Receiver is here; joining another server:", serverId)
+        local sent, problem = pcall(function()
+            TS:TeleportToPlaceInstance(CONFIG.PlaceId, serverId, player)
+        end)
+        if not sent then failed, failureText = true, tostring(problem) end
+        local nextNotice = os.clock() + 30
+        while not failed and not env.JackpotTradeOnlyStop do
+            if os.clock() >= nextNotice then
+                log("[AvoidReceiver] Teleport pending; not sending a duplicate request")
+                nextNotice = os.clock() + 30
+            end
+            task.wait(0.25)
+        end
+        if teleportConnection then teleportConnection:Disconnect(); teleportConnection = nil end
+        if failed then
+            teleportInProgress = false
+            warn("[AvoidReceiver] Teleport failed:", failureText)
+            return false
+        end
+        return true -- คำขอส่งแล้ว; ที่เซิร์ฟใหม่ autorun จะเริ่มสคริปต์ให้เอง
     end
 
     local function startOnePlayerHop()
@@ -527,10 +607,19 @@ local function main()
         pause(CONFIG.ObserveSeconds)
         if env.JackpotTradeOnlyStop then return end
         if autochangeIfJackpotEmpty() then return end
-        while not receiverHere() and not env.JackpotTradeOnlyStop do
+        while not env.JackpotTradeOnlyStop do
             if autochangeIfJackpotEmpty() then return end
-            local ok, err = pcall(followReceiver)
-            if not ok then log("Follow error:", err) end
+            if receiverHere() then
+                if not CONFIG.AvoidReceiverAtZeroEnabled or jackpotAmount() > 0 then
+                    break -- มี Jackpot: อยู่กับ Receiver เพื่อเข้าสู่ระบบเทรด
+                end
+                -- Jackpot = 0: ยังไม่เทรด Gems/Trait Reroll ให้ลองออกจากเซิร์ฟก่อน
+                local ok, err = pcall(avoidReceiverWhenJackpotZero)
+                if not ok then log("AvoidReceiver error:", err) end
+            else
+                local ok, err = pcall(followReceiver)
+                if not ok then log("Follow error:", err) end
+            end
             pause(CONFIG.ReceiverRetrySeconds)
         end
         if env.JackpotTradeOnlyStop then return end
@@ -611,22 +700,68 @@ local function main()
         end
         log("Receiver mode: accepting", table.concat(CONFIG.Items, ", "))
         local started
+        local lastCancelAt = -math.huge
+        local lastRejectReason
+
+        -- Never stop the whole receiver script because another player offered
+        -- an unconfigured item, an invalid amount, or a trade timed out.
+        -- Cancel only that trade and keep waiting for the next request.
+        local function rejectTrade(reason)
+            if reason ~= lastRejectReason then
+                lastRejectReason = reason
+                warn("[JackpotTrade][Receiver] Rejecting trade: " .. tostring(reason))
+            end
+            -- Retry cancellation if Ended does not arrive; do not spam the remote.
+            if os.clock() - lastCancelAt >= 2 then
+                lastCancelAt = os.clock()
+                local ok, err = pcall(function() cancelSignal:Fire() end)
+                if not ok then warn("[JackpotTrade][Receiver] CancelTrade failed:", err) end
+            end
+        end
+
         while not env.JackpotTradeOnlyStop do
-            if fatal then error(fatal) end
             if activePartner then
                 started = started or os.clock()
-                assert(os.clock() - started < CONFIG.TradeTimeout, "Receiver trade timeout")
-                if state then
-                    assert(next(state.ownOffer) == nil, "Receiver offered an item")
-                    local count = 0
-                    for _, entry in pairs(state.otherOffer) do
-                        assert(wanted[entry.name] and entry.amount > 0, "Unexpected incoming item")
-                        count = count + 1
+                local rejectReason
+                if fatal then
+                    rejectReason = "Trade state mismatch: " .. tostring(fatal)
+                    fatal = nil
+                elseif os.clock() - started >= CONFIG.TradeTimeout then
+                    rejectReason = "Trade timed out"
+                elseif state then
+                    if type(state.ownOffer) ~= "table" or next(state.ownOffer) ~= nil then
+                        rejectReason = "Receiver offer is not empty or is invalid"
+                    elseif type(state.otherOffer) ~= "table" then
+                        rejectReason = "Incoming offer has invalid structure"
+                    else
+                        local count = 0
+                        for _, entry in pairs(state.otherOffer) do
+                            if type(entry) ~= "table" then
+                                rejectReason = "Incoming offer entry is not a table"
+                                break
+                            end
+                            local name, amount = entry.name, entry.amount
+                            if type(name) ~= "string" or not wanted[name]
+                                or type(amount) ~= "number" or amount <= 0 then
+                                rejectReason = "Unexpected incoming item: name=" .. tostring(name)
+                                    .. ", amount=" .. tostring(amount)
+                                break
+                            end
+                            count = count + 1
+                        end
+                        if not rejectReason and count > 0 and state.otherReady then
+                            advance()
+                        end
                     end
-                    if count > 0 and state.otherReady then advance() end
                 end
+                if rejectReason then rejectTrade(rejectReason) end
             else
-                started = nil
+                -- TradeEvent 'Ended' clears activePartner; reset for the next trade.
+                started, lastRejectReason, lastCancelAt = nil, nil, -math.huge
+                if fatal then
+                    warn("[JackpotTrade][Receiver] Ignoring stale trade error:", fatal)
+                    fatal = nil
+                end
             end
             task.wait(0.1)
         end
@@ -639,10 +774,30 @@ local function main()
         -- ต้องตรวจทุกครั้ง แม้ Gems/Trait Reroll ยังอยู่ (#keys จะไม่เป็นศูนย์)
         -- หลังเทรด Jackpot หมดแล้ว จึง Autochange โดยไม่รอ Items อื่นหมด
         if autochangeIfJackpotEmpty() then return end
+        if CONFIG.AvoidReceiverAtZeroEnabled and jackpotAmount() == 0 and receiverHere() then
+            -- ถ้าตัวรับมาเจอไอดีที่ยังไม่มี Jackpot ระหว่างฟาร์ม: งดเทรดและย้ายเซิร์ฟ
+            local ok, err = pcall(avoidReceiverWhenJackpotZero)
+            if not ok then log("AvoidReceiver error:", err) end
+            pause(CONFIG.ReceiverRetrySeconds)
+            continue
+        end
         local bag = inventory()
+        local totals = {}
+        -- รวมจำนวนแต่ละชื่อก่อน เพื่อไม่ให้หลาย inventory entries ถูกตรวจขั้นต่ำแยกกัน
+        for _, entry in pairs(bag) do
+            assert(type(entry) == "table", "Invalid inventory entry")
+            if wanted[entry.name] then
+                assert(type(entry.amount) == "number" and entry.amount >= 0,
+                    "Invalid configured item amount")
+                totals[entry.name] = (totals[entry.name] or 0) + entry.amount
+            end
+        end
         local keys = {}
         for key, entry in pairs(bag) do
-            if wanted[entry.name] and entry.amount > 0 then table.insert(keys, key) end
+            local minimum = CONFIG.TradeMinimums[entry.name] or 1
+            if wanted[entry.name] and entry.amount > 0 and (totals[entry.name] or 0) >= minimum then
+                table.insert(keys, key) -- เมื่อผ่านขั้นต่ำแล้ว ส่งจำนวนทั้งหมดของไอเทมนั้น
+            end
         end
         table.sort(keys)
         if #keys == 0 then
@@ -674,6 +829,10 @@ local function main()
         ended, fatal = nil, nil
         -- หาก Hop รอบ 15 นาทีเริ่มก่อนแผนเทรดเสร็จ อย่ายิงคำขอเทรดซ้อนกับ Teleport
         if teleportInProgress then task.wait(1); continue end
+        if CONFIG.AvoidReceiverAtZeroEnabled and jackpotAmount() == 0 then
+            task.wait(1) -- ตรวจใหม่รอบหน้า: Autochange หรือออกจากเซิร์ฟ Receiver
+            continue
+        end
         tradeBusy = true
         log("Requesting trade with", awaiting.Name)
         requestSignal:Fire(awaiting)
