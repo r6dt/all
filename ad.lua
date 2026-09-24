@@ -599,6 +599,7 @@ local function main()
     local advanceSignal = comm:GetSignal("AdvanceTrade")
     cancelSignal = comm:GetSignal("CancelTrade")
     local state, ended, fatal, awaiting, plan
+    local incomingOfferRejected = false
     local lastAdvance = -math.huge
     local confirmSent = -math.huge
     local readySent = false
@@ -610,12 +611,14 @@ local function main()
             end
         elseif event == "Started" then
             activePartner, state, ended = payload.partner, nil, nil
+            incomingOfferRejected = false
             readySent, confirmSent = false, -math.huge
             if not receiverMode and activePartner ~= awaiting then fatal = "Unexpected trade partner" end
         elseif event == "Updated" and activePartner then
             if payload.partner ~= activePartner then fatal = "Trade partner changed" else state = payload end
         elseif event == "Ended" and activePartner then
             ended, activePartner, state = payload.reason, nil, nil
+            incomingOfferRejected = false
         end
     end)
     local function waitFor(predicate, seconds)
@@ -660,14 +663,31 @@ local function main()
             if activePartner then
                 started = started or os.clock()
                 assert(os.clock() - started < CONFIG.TradeTimeout, "Receiver trade timeout")
-                if state then
+                -- Validate only after sender is ready; intermediate offer updates may be incomplete.
+                if state and state.otherReady and not incomingOfferRejected then
                     assert(next(state.ownOffer) == nil, "Receiver offered an item")
                     local count = 0
-                    for _, entry in pairs(state.otherOffer) do
-                        assert(wanted[entry.name] and entry.amount > 0, "Unexpected incoming item")
-                        count = count + 1
+                    for key, entry in pairs(state.otherOffer) do
+                        local name = type(entry) == "table" and entry.name or nil
+                        local amount = type(entry) == "table" and entry.amount or nil
+                        -- Zero-amount entries can be transient while the offer updates.
+                        if type(amount) ~= "number" or amount < 0
+                            or (amount > 0 and not wanted[name]) then
+                            -- Reject an invalid offer without terminating the receiver script.
+                            -- Log the raw key/name so a differing game payload can be diagnosed.
+                            incomingOfferRejected = true
+                            warn("[JackpotTrade] Unexpected incoming item; cancelling trade:",
+                                "key=" .. tostring(key),
+                                "name=" .. tostring(name),
+                                "amount=" .. tostring(amount))
+                            cancelSignal:Fire()
+                            break
+                        end
+                        if amount > 0 then count = count + 1 end
                     end
-                    if count > 0 and state.otherReady then advance() end
+                    if not incomingOfferRejected and count > 0 and state.otherReady then
+                        advance()
+                    end
                 end
             else
                 started = nil
