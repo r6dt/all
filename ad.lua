@@ -9,7 +9,7 @@ local CONFIG = {
     Items = {"Jackpot Spin", "Gems", "Trait Reroll"},
     TradeMinimums = {
         ["Gems"] = 100, -- ตัวอย่าง: Gems 100 ขึ้นไป จึงส่ง Gems
-        ["Trait Reroll"] = 100, -- ตัวอย่าง: Trait Reroll 100 ขึ้นไป จึงส่ง Trait Reroll
+        ["Trait Reroll"] = 50, -- ตัวอย่าง: Trait Reroll 100 ขึ้นไป จึงส่ง Trait Reroll
     },
     AutochangeEnabled = true, -- true = Autochange when Jackpot Spin is zero after first Jackpot was saved; other Items do not block it
     PlaceId = 113290951185459,
