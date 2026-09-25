@@ -600,6 +600,7 @@ local function main()
     cancelSignal = comm:GetSignal("CancelTrade")
     local state, ended, fatal, awaiting, plan
     local incomingOfferRejected = false
+    local tradeSequence = 0 -- Identify consecutive trades even when Ended/Started occur between loop ticks.
     local lastAdvance = -math.huge
     local confirmSent = -math.huge
     local readySent = false
@@ -610,6 +611,7 @@ local function main()
                 respondSignal:Fire(true)
             end
         elseif event == "Started" then
+            tradeSequence = tradeSequence + 1
             activePartner, state, ended = payload.partner, nil, nil
             incomingOfferRejected = false
             readySent, confirmSent = false, -math.huge
@@ -657,40 +659,91 @@ local function main()
                 "Could not enable trade requests")
         end
         log("Receiver mode: accepting", table.concat(CONFIG.Items, ", "))
-        local started
+        local started, cancelRequestedAt, lastCancelAttemptAt, lastStatusLogAt, observedTradeSequence
+        local function receiverStatus()
+            if not state then return "state=waiting" end
+            local count = 0
+            if type(state.otherOffer) == "table" then
+                for _ in pairs(state.otherOffer) do count = count + 1 end
+            end
+            return "phase=" .. tostring(state.phase)
+                .. " items=" .. tostring(count)
+                .. " senderReady=" .. tostring(state.otherReady)
+                .. " receiverReady=" .. tostring(state.ownReady)
+                .. " senderAccepted=" .. tostring(state.otherAccepted)
+                .. " receiverAccepted=" .. tostring(state.ownAccepted)
+        end
+        local function cancelReceiverTrade(reason)
+            if cancelRequestedAt then return end
+            cancelRequestedAt = os.clock()
+            lastCancelAttemptAt = cancelRequestedAt
+            incomingOfferRejected = true -- Never advance a trade after cancellation is requested.
+            warn("[JackpotTrade] Receiver cancelling trade:", reason,
+                "partner=" .. tostring(activePartner and activePartner.Name), receiverStatus())
+            local ok, err = pcall(function() cancelSignal:Fire() end)
+            if not ok then warn("[JackpotTrade] CancelTrade failed:", err) end
+        end
         while not env.JackpotTradeOnlyStop do
-            if fatal then error(fatal) end
             if activePartner then
-                started = started or os.clock()
-                assert(os.clock() - started < CONFIG.TradeTimeout, "Receiver trade timeout")
-                -- Validate only after sender is ready; intermediate offer updates may be incomplete.
-                if state and state.otherReady and not incomingOfferRejected then
-                    assert(next(state.ownOffer) == nil, "Receiver offered an item")
-                    local count = 0
-                    for key, entry in pairs(state.otherOffer) do
-                        local name = type(entry) == "table" and entry.name or nil
-                        local amount = type(entry) == "table" and entry.amount or nil
-                        -- Zero-amount entries can be transient while the offer updates.
-                        if type(amount) ~= "number" or amount < 0
-                            or (amount > 0 and not wanted[name]) then
-                            -- Reject an invalid offer without terminating the receiver script.
-                            -- Log the raw key/name so a differing game payload can be diagnosed.
-                            incomingOfferRejected = true
-                            warn("[JackpotTrade] Unexpected incoming item; cancelling trade:",
-                                "key=" .. tostring(key),
-                                "name=" .. tostring(name),
-                                "amount=" .. tostring(amount))
-                            cancelSignal:Fire()
-                            break
-                        end
-                        if amount > 0 then count = count + 1 end
+                local now = os.clock()
+                if observedTradeSequence ~= tradeSequence then
+                    observedTradeSequence = tradeSequence
+                    started, cancelRequestedAt, lastCancelAttemptAt, lastStatusLogAt = now, nil, nil, nil
+                end
+                if fatal then
+                    local reason = fatal
+                    fatal = nil
+                    cancelReceiverTrade("Trade event mismatch: " .. tostring(reason))
+                end
+                if now - (lastStatusLogAt or -math.huge) >= 15 then
+                    lastStatusLogAt = now
+                    log("Receiver status:", "partner=" .. tostring(activePartner.Name),
+                        "elapsed=" .. tostring(math.floor(now - started)) .. "s", receiverStatus())
+                end
+                -- A stalled trade is a recoverable per-trade error, not a script-wide error.
+                if not cancelRequestedAt and now - started >= CONFIG.TradeTimeout then
+                    cancelReceiverTrade("Trade timeout after " .. tostring(CONFIG.TradeTimeout) .. "s")
+                end
+                if cancelRequestedAt then
+                    -- Keep the local trade state until the server emits Ended. Do not invent
+                    -- a successful cancellation or accept another request prematurely.
+                    if now - lastCancelAttemptAt >= 10 then
+                        lastCancelAttemptAt = now
+                        warn("[JackpotTrade] Waiting for server to end cancelled trade; retrying CancelTrade:",
+                            receiverStatus())
+                        local ok, err = pcall(function() cancelSignal:Fire() end)
+                        if not ok then warn("[JackpotTrade] CancelTrade retry failed:", err) end
                     end
-                    if not incomingOfferRejected and count > 0 and state.otherReady then
-                        advance()
+                elseif state and state.otherReady then
+                    -- Validate only after sender is ready; intermediate offer updates may be incomplete.
+                    if type(state.ownOffer) ~= "table" or next(state.ownOffer) ~= nil then
+                        cancelReceiverTrade("Receiver offer is not empty/valid")
+                    elseif type(state.otherOffer) ~= "table" then
+                        cancelReceiverTrade("Incoming offer is not a table")
+                    else
+                        local count = 0
+                        for key, entry in pairs(state.otherOffer) do
+                            local name = type(entry) == "table" and entry.name or nil
+                            local amount = type(entry) == "table" and entry.amount or nil
+                            if type(amount) ~= "number" or amount < 0
+                                or (amount > 0 and not wanted[name]) then
+                                -- Include the raw entry for diagnosing game payload changes.
+                                cancelReceiverTrade("Unexpected incoming item: key=" .. tostring(key)
+                                    .. " name=" .. tostring(name) .. " amount=" .. tostring(amount))
+                                break
+                            end
+                            if amount > 0 then count = count + 1 end
+                        end
+                        if not cancelRequestedAt and count > 0 then advance() end
                     end
                 end
             else
-                started = nil
+                if started then
+                    log("Receiver trade ended:", tostring(ended))
+                end
+                started, cancelRequestedAt, lastCancelAttemptAt, lastStatusLogAt = nil, nil, nil, nil
+                observedTradeSequence = nil
+                fatal = nil
             end
             task.wait(0.1)
         end
@@ -789,7 +842,14 @@ local function main()
             task.wait(0.1)
         end
         if env.JackpotTradeOnlyStop then return end
-        assert(ended == "Completed", "Trade did not complete: " .. tostring(ended))
+        if ended ~= "Completed" then
+            -- Receiver may cancel a stalled/invalid trade. Retry with a freshly read inventory
+            -- instead of terminating the sender's entire script.
+            tradeBusy = false
+            warn("[JackpotTrade] Trade ended without completion:", tostring(ended), "; retrying after cooldown")
+            pause(math.max(CONFIG.RequestInterval, rules.REQUEST_COOLDOWN + 0.5))
+            continue
+        end
         assert(waitFor(function()
             local current = inventory()
             for key, amount in pairs(before) do
