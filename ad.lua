@@ -16,7 +16,7 @@ local CONFIG = {
     ObserveSeconds = 10,
     ReceiverRetrySeconds = 8,
     RequestInterval = 8,
-    TradeTimeout = 120,
+    TradeTimeout = 60,
     ConfirmRetrySeconds = 1,
     FromFolderId = "9e4b577700b769f1279f64ede403b020383128a744cce7cbd2e1ccfbaead317a",
     ToFolderId = "afbf6dd712c435e44981a0959a093fb30b3aa391eeb803647804d6e95dfc167f",
@@ -24,7 +24,7 @@ local CONFIG = {
     JackpotStateFolder = "JackpotTradeState", -- executor workspace folder สำหรับจำว่าไอดีนี้เคยมี Jackpot Spin แล้ว
     MinJackpotToHop = 1, -- Jackpot Spin >= 1: Hop กลับไปหา Receiver; Gems/Trait Reroll ไม่กระตุ้น Hop
     AvoidReceiverAtZeroEnabled = true, -- Jackpot = 0 และ Receiver อยู่เซิร์ฟเดียวกัน: Hop ออกทันที (ก่อนเคยได้ Jackpot)
-    PopulationHopEnabled = true, -- เริ่มเปิดระบบ Hop ตามจำนวนผู้เล่น
+    PopulationHopEnabled = false, -- เริ่มเปิดระบบ Hop ตามจำนวนผู้เล่น
     PopulationHopThreshold = 8, -- ถึง 8 คนขึ้นไปจึงเริ่มนับ
     PopulationHopConfirmSeconds = 120, -- คนยัง >= 8 ครบ 120 วินาทีจึง Hop
     PopulationHopCheckSeconds = 1, -- ตรวจจำนวนคนทุก 1 วินาที
