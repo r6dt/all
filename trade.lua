@@ -297,14 +297,18 @@ local uiOK, uiError = pcall(function()
     end)
     if isReceiver then
         manualHopButton = Instance.new("TextButton")
-        manualHopButton.Position = UDim2.fromOffset(12, 140)
-        manualHopButton.Size = UDim2.new(1, -24, 0, 22)
-        manualHopButton.BackgroundColor3 = Color3.fromRGB(40, 85, 125)
+        manualHopButton.Position = UDim2.fromOffset(14, 82)
+        manualHopButton.Size = UDim2.new(1, -28, 0, 24)
+        manualHopButton.BackgroundColor3 = Color3.fromRGB(45,120,190)
+        manualHopButton.BackgroundTransparency = 0.25
         manualHopButton.TextColor3 = Color3.new(1, 1, 1)
         manualHopButton.Font = Enum.Font.GothamBold
         manualHopButton.TextSize = 12
         manualHopButton.Text = "HOP TO LOW POPULATION SERVER"
         manualHopButton.Parent = panel
+        local hopCorner = Instance.new("UICorner")
+        hopCorner.CornerRadius = UDim.new(0,8)
+        hopCorner.Parent = manualHopButton
         manualHopButton.Activated:Connect(function()
             if env.ItemTradeStop or not env.ItemTradeRunning or manualHopRequested then return end
             manualHopRequested = true
