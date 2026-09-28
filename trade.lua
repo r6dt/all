@@ -1,636 +1,961 @@
 repeat task.wait() until game:IsLoaded()
--- Anime Dice: trade configured items to Receiver, then FarmSync Autochange only when Jackpot Spin is zero after it was seen and saved.
--- Run the same script on sender(s) and receiver. Autorun is required after teleport.
+-- Run on sender(s) AND receiver. Receiver automatically accepts incoming requests.
+-- Use exact Roblox username and exact inventory item names.
+-- ตามตัวรับตามขั้นต่ำ เทรดตามจำนวน และทำ EmptyAction หลังยืนยันสำเร็จ
 local CONFIG = {
-    AutoRejoinEnabled = true, -- ตรวจ Disconnect แล้วลองเข้าเกมเดิมใหม่
-    RejoinDelaySeconds = 5, -- รอหลังตรวจพบว่าหลุดก่อนเข้าใหม่
-    RejoinRetrySeconds = 30, -- พักก่อนลองใหม่ เมื่อ Roblox แจ้งวาร์ปล้มเหลว
-    Receiver = "9pt4hy",
-    Items = {"Jackpot Spin", "Gems", "Trait Reroll"},
-    TradeMinimums = {
-        ["Gems"] = 100, -- ตัวอย่าง: Gems 100 ขึ้นไป จึงส่ง Gems
-        ["Trait Reroll"] = 50, -- ตัวอย่าง: Trait Reroll 100 ขึ้นไป จึงส่ง Trait Reroll
+    -- ===============================================================================================================
+    Receivers = {"zPr4m0t"}, -- ชื่อตัวรับ ใช้ไฟล์นี้และรายชื่อเดียวกันทั้งตัวส่ง/ตัวรับ ตามเซิฟผ่าน API
+    HopWhenNotReadyWithReceiver = true, -- ตัวส่งยังไม่ครบเงื่อนไขตามตัวรับและอยู่ห้องตัวรับ ให้ย้ายออก
+    ReceiverHopWhenStuck = true, -- ตัวรับย้ายเมื่อห้องเต็มและคนเดิมต่อเนื่อง 5 นาที
+    -- ===============================================================================================================
+    JoinConditions = {
+        Mode = "any", -- any = ผ่านอย่างน้อยหนึ่งเงื่อนไข | all = ผ่านทุกเงื่อนไขที่เปิด
+        Items = {
+            ["Gems"] = 1000,
+            ["Trait Reroll"] = 300
+            -- ["Lucky Spin"] = 5
+        },
+        Units = {
+            Enabled = false,
+            MinIncome = "1m",
+            MaxIncome = 0,
+            Count = 3
+        },
     },
-    AutochangeEnabled = true, -- true = Autochange when Jackpot Spin is zero after first Jackpot was saved; other Items do not block it
+    -- ===============================================================================================================
+    Trade = {
+        KeepEquippedGear = true, -- ไม่เทรดเกียร์ที่กำลังสวมไว้ 1 ชิ้น ส่งส่วนที่เหลือได้ เช่น มี 10ชิ้น สวมอยู่ 1 ชิ้น จะเทรดได้ 9 ชิ้น
+        Items = {
+            ["Gems"] = "all",
+            ["Trait Reroll"] = "all",
+            ["Lucky Spin"] = "all",
+			["Angel's Halo"] = "all",
+            ["Sakuna's Sash"] = "all",
+            ["Enol's Drums"] = "all",
+            ["Obita's Mask"] = "all",
+            ["Mazun's Coat"] = "all"
+        },
+        Units = {
+            Enabled = false,
+            Names = {}, -- ว่าง = ทุกชื่อที่ผ่านรายได้
+            MinIncome = "1m", -- รองรับตัวย่อของเกม; 0 = ไม่จำกัดเพดาน -- k, m, b, t, qd, qi, sx, sp, oc, no, dc, udc, ddc, tdc, qadc, qidc, sxdc, spdc, ocdc, nodc, vg, uvg, dvg, tvg, qavg, qivg, sxvg, spvg, ocvg
+            MaxIncome = 0,
+            Amount = "all", -- หรือจำนวนตัวที่ต้องการส่งให้ครบ
+            SendOrder = "lowest", -- lowest = รายได้น้อยก่อน | highest = มากก่อน
+            SkipLocked = true, SkipSlotted = true,
+            KeepPerName = 1, -- เก็บรายได้สูงสุดของแต่ละชื่อไว้จำนวนนี้
+        },
+    },
+    -- ===============================================================================================================
+    EmptyAction = "hop", -- hop | autochange | none
+    FarmSync = {
+        FromFolderId = "",
+        ToFolderId = "",
+        WithoutReplacement = false 
+    },
+    -- ===============================================================================================================
+}
+
+-- ค่าภายในระบบ ไม่จำเป็นต้องปรับในการใช้งานทั่วไป
+local INTERNAL = {
+    LogMaxBytes = 262144, -- logหลักสูงสุดประมาณ256KB เก็บข้อความล่าสุดในไฟล์เดียว ไม่สร้างสำรอง
+    DataLoadNoticeSeconds = 5, -- แสดงสถานะรอโหลดทุกกี่วินาที ไม่ตัดจบเมื่อเกิน60วินาที
+    StateDirectory = "FlexibleTradeState", -- โฟลเดอร์สถานะใน workspace ของ executor
+    AutochangeRetrySeconds = 30, -- ลองใหม่เฉพาะ FarmSync คืน false ชัดเจน
+    AutochangeResponseTimeout = 60, -- เกินเวลานี้ถือว่าผลไม่แน่นอน ไม่ส่งซ้ำ
+    ServerRateLimitWait = 60, -- เมื่อค้นหาเซิร์ฟโดน429 เริ่มพักกี่วินาที แล้วเพิ่มเวลาหากยังโดน
     PlaceId = 113290951185459,
-    ObserveSeconds = 10,
-    ReceiverRetrySeconds = 8,
+    ServerRetrySeconds = 8, -- Retry receivers after unavailable/full servers
+    HopRetrySeconds = 30,
+    ReceiverStuckSeconds = 300,
+    ReceiverHopRetrySeconds = 30,
+    HopPoolSize = 15, -- สุ่มจากห้องที่คนน้อยที่สุดไม่เกินจำนวนนี้
+    HopJitterMin = 2, -- หน่วงก่อน hop แบบสุ่ม หน่วยวินาที
+    HopJitterMax = 12,
     RequestInterval = 8,
     TradeTimeout = 120,
-    ConfirmRetrySeconds = 1,
-    FromFolderId = "9e4b577700b769f1279f64ede403b020383128a744cce7cbd2e1ccfbaead317a",
-    ToFolderId = "afbf6dd712c435e44981a0959a093fb30b3aa391eeb803647804d6e95dfc167f",
-    WithoutReplacement = false,
-    JackpotStateFolder = "JackpotTradeState", -- executor workspace folder สำหรับจำว่าไอดีนี้เคยมี Jackpot Spin แล้ว
-    MinJackpotToHop = 1, -- Jackpot Spin >= 1: Hop กลับไปหา Receiver; Gems/Trait Reroll ไม่กระตุ้น Hop
-    AvoidReceiverAtZeroEnabled = true, -- Jackpot = 0 และ Receiver อยู่เซิร์ฟเดียวกัน: Hop ออกทันที (ก่อนเคยได้ Jackpot)
-    PopulationHopEnabled = true, -- เริ่มเปิดระบบ Hop ตามจำนวนผู้เล่น
-    PopulationHopThreshold = 8, -- ถึง 8 คนขึ้นไปจึงเริ่มนับ
-    PopulationHopConfirmSeconds = 120, -- คนยัง >= 8 ครบ 120 วินาทีจึง Hop
-    PopulationHopCheckSeconds = 1, -- ตรวจจำนวนคนทุก 1 วินาที
-    PopulationHopRetrySeconds = 30, -- เว้นก่อนลองใหม่หาก API/Teleport ล้มเหลว
-    PopulationHopTargetPlayers = 1, -- เลือกเซิร์ฟที่มี 1 คนก่อนเราเข้าเป็นอันดับแรก
-    PopulationHopMaxPages = 10, -- จำกัดหน้าที่อ่านจาก server API
+    ConfirmRetryInterval = 1,
+    AdvanceGap = 0.35,
+    ObserveSeconds = 10,
 }
 local env = getgenv and getgenv() or _G
-if env.JackpotTradeOnlyRunning then
-    warn("[JackpotTrade] Already running")
-    return
-end
-env.JackpotTradeOnlyRunning = true
-env.JackpotTradeOnlyStop = false
-local tradeConnection, teleportConnection, cancelSignal, activePartner
-local hopThreadAlive = true
-local function log(...) print("[JackpotTrade]", ...) end
--- ปรับสวิตช์ระหว่างรัน: getgenv().SetJackpotPopulationHop(false/true)
-env.JackpotPopulationHopEnabled = CONFIG.PopulationHopEnabled
-env.SetJackpotPopulationHop = function(enabled)
-    assert(type(enabled) == "boolean", "SetJackpotPopulationHop requires true or false")
-    env.JackpotPopulationHopEnabled = enabled
-    log("Population-based server hop:", enabled and "ON" or "OFF")
-end
--- Alias ชื่อเดิมสำหรับสคริปต์ที่เรียกคำสั่งเก่า
-env.SetJackpotOnePlayerHop = env.SetJackpotPopulationHop
-local function pause(seconds)
-    local deadline = os.clock() + seconds
-    while not env.JackpotTradeOnlyStop and os.clock() < deadline do task.wait(0.1) end
-end
--- ตรวจเฉพาะหน้าต่าง ErrorPrompt ของ Roblox ไม่ใช้ error จากการเทรดเป็นตัวกระตุ้น
--- CoreGui เป็นโครงสร้างภายใน อาจเปลี่ยนตาม Roblox/executor
-local rejoinToken = {}
-env.JackpotDisconnectMonitor = rejoinToken
-env.JackpotAutoRejoinStop = false
-local intentionalExit = false
-local rejoining = false
-local function startDisconnectMonitor()
-    if not CONFIG.AutoRejoinEnabled then return end
-    assert(type(CONFIG.RejoinDelaySeconds) == "number" and CONFIG.RejoinDelaySeconds >= 0
-        and CONFIG.RejoinDelaySeconds < math.huge, "Invalid RejoinDelaySeconds")
-    assert(type(CONFIG.RejoinRetrySeconds) == "number" and CONFIG.RejoinRetrySeconds >= 5
-        and CONFIG.RejoinRetrySeconds < math.huge, "Invalid RejoinRetrySeconds")
-    local Players = game:GetService("Players")
-    local TS = game:GetService("TeleportService")
-    local function alive()
-        return env.JackpotDisconnectMonitor == rejoinToken and not env.JackpotAutoRejoinStop
-            and not intentionalExit and (rejoining or not env.JackpotTradeOnlyStop)
-    end
-    local function waitActive(seconds)
-        local untilTime = os.clock() + seconds
-        while alive() and os.clock() < untilTime do task.wait(0.25) end
-        return alive()
-    end
-    task.spawn(function()
-        local warned = false
-        while alive() do
-            local ok, disconnected = pcall(function()
-                local gui = game:GetService("CoreGui"):FindFirstChild("RobloxPromptGui")
-                local overlay = gui and gui:FindFirstChild("promptOverlay")
-                if not overlay then return false end
-                for _, prompt in ipairs(overlay:GetDescendants()) do
-                    if prompt.Name == "ErrorPrompt" and prompt:IsA("GuiObject") then
-                        local visible, parent = true, prompt
-                        while parent and parent ~= gui do
-                            if parent:IsA("GuiObject") and not parent.Visible then visible = false break end
-                            parent = parent.Parent
-                        end
-                        if gui:IsA("ScreenGui") and not gui.Enabled then visible = false end
-                        if visible then
-                            local texts = {}
-                            for _, child in ipairs(prompt:GetDescendants()) do
-                                if child:IsA("TextLabel") then table.insert(texts, child.Text) end
-                            end
-                            local message = table.concat(texts, " "):lower()
-                            if message:find("disconnected", 1, true) or message:find("kicked", 1, true)
-                                or message:find("lost connection", 1, true)
-                                or message:find("ถูกตัดการเชื่อมต่อ", 1, true)
-                                or message:find("ขาดการเชื่อมต่อ", 1, true)
-                                or message:find("ถูกเตะ", 1, true) then return true end
-                        end
-                    end
-                end
-                return false
-            end)
-            if not ok and not warned then
-                warned = true
-                warn("[AutoRejoin] Cannot inspect Roblox disconnect prompt:", disconnected)
-            end
-            if ok and disconnected then break end
-            if not waitActive(1) then return end
+-- Compact on-screen status; log calls below are redirected to this panel.
+local nativePrint, nativeWarn = print, warn
+local logPath
+local logBytes = 0
+local lastLog
+local logFailureShown = false
+local function record(message)
+    if message == lastLog then return end
+    lastLog = message
+    local ok, err = pcall(function()
+        assert(type(INTERNAL.LogMaxBytes) == "number" and INTERNAL.LogMaxBytes >= 16384
+            and INTERNAL.LogMaxBytes < math.huge, "Invalid LogMaxBytes")
+        if not logPath then
+            assert(type(writefile) == "function" and type(appendfile) == "function"
+                and type(readfile) == "function" and type(isfile) == "function", "File logging unavailable")
+            local player = game:GetService("Players").LocalPlayer
+            if not isfolder("TradeLogs") then makefolder("TradeLogs") end
+            local path = "TradeLogs/" .. tostring(player.UserId) .. ".log"
+            if not isfile(path) then writefile(path, "Trade / Autochange log\n") end
+            logBytes = #readfile(path)
+            local header = os.date("!%Y-%m-%dT%H:%M:%SZ") .. " SESSION START " .. player.Name .. "\n"
+            appendfile(path, header)
+            logBytes = logBytes + #header
+            logPath = path
+            nativePrint("[ItemTrade] Log:", logPath)
         end
-        if not alive() then return end
-        rejoining = true
-        env.JackpotTradeOnlyStop = true -- หยุดระบบเทรด/ตามตัวรับเดิมก่อนใช้รีจอย
-        if teleportConnection then teleportConnection:Disconnect(); teleportConnection = nil end
-        log("Disconnect detected; rejoining in", CONFIG.RejoinDelaySeconds, "seconds")
-        if not waitActive(CONFIG.RejoinDelaySeconds) then return end
-        while alive() do
-            local player = Players.LocalPlayer
-            if not player then warn("[AutoRejoin] LocalPlayer unavailable") return end
-            local failed, failure = false, ""
-            local connection = TS.TeleportInitFailed:Connect(function(target, result, message)
-                if target == player then failed, failure = true, tostring(result) .. ": " .. tostring(message) end
-            end)
-            log("AutoRejoin: joining Place ID", CONFIG.PlaceId)
-            local sent, problem = pcall(function() TS:Teleport(CONFIG.PlaceId, player) end)
-            if not sent then failed, failure = true, tostring(problem) end
-            -- รอผล ห้ามยิงซ้ำเพราะครบเวลาอย่างเดียว (คำขอเดิมอาจยังทำงานอยู่)
-            local nextNotice = os.clock() + 30
-            while alive() and not failed do
-                if os.clock() >= nextNotice then
-                    log("AutoRejoin pending; waiting for teleport result")
-                    nextNotice = os.clock() + 30
-                end
-                task.wait(0.25)
-            end
-            connection:Disconnect()
-            if not alive() then return end
-            warn("[AutoRejoin] Failed:", failure)
-            if not waitActive(CONFIG.RejoinRetrySeconds) then return end
+        local line = os.date("!%Y-%m-%dT%H:%M:%SZ") .. " " .. game:GetService("Players").LocalPlayer.Name .. " " .. message .. "\n"
+        if logBytes + #line > INTERNAL.LogMaxBytes then
+            local previous = readfile(logPath)
+            previous = previous:sub(-math.floor(INTERNAL.LogMaxBytes / 2))
+            previous = previous:match("[^\n]*\n(.*)") or ""
+            writefile(logPath, previous)
+            assert(readfile(logPath) == previous, "Log rewrite verification failed")
+            logBytes = #previous
         end
+        appendfile(logPath, line)
+        logBytes = logBytes + #line
     end)
+    if not ok and not logFailureShown then
+        logFailureShown = true
+        nativeWarn("[ItemTrade] Log unavailable:", err)
+    end
 end
+local statusLabel, detailLabel, balanceLabel, statusDot
+local uiAlive = true
+local latestStatus = "Starting..."
+local latestError = false
+local function showStatus(isError, ...)
+    local parts = {}
+    for i = 1, select("#", ...) do parts[i] = tostring(select(i, ...)) end
+    local message = table.concat(parts, " "):gsub("%[ItemTrade%] ?", ""):gsub("%[Autochange%] ?", "")
+    record(message)
+    latestStatus, latestError = message, isError
+    if statusLabel and uiAlive then
+        statusLabel.Text = message
+        statusLabel.TextColor3 = isError and Color3.fromRGB(255, 130, 130) or Color3.fromRGB(240, 245, 255)
+        statusDot.BackgroundColor3 = isError and Color3.fromRGB(255, 90, 90) or Color3.fromRGB(68, 224, 170)
+    end
+end
+local function print(...) showStatus(false, ...) end
+local function warn(...) showStatus(true, ...) end
+if env.ItemTradeAutochangeUncertain then nativeWarn("Autochange outcome unknown; check FarmSync before running again") return end
+if env.ItemTradeRunning then nativeWarn("[ItemTrade] Already running; stop the old script first") return end
+env.ItemTradeRunning = true
+env.ItemTradeStop = false
+local connection, cancel, activePartner
+local rosterConnections = {}
+local manualHopRequested = false
+local manualHopButton
+
+local uiOK, uiError = pcall(function()
+    local player = game:GetService("Players").LocalPlayer
+    local isReceiver = false
+    for _, name in ipairs(CONFIG.Receivers) do
+        if name:lower() == player.Name:lower() then isReceiver = true break end
+    end
+    local playerGui = player:WaitForChild("PlayerGui", 15)
+    assert(playerGui, "PlayerGui unavailable")
+    local old = playerGui:FindFirstChild("JackpotTradeStatus")
+    if old then old:Destroy() end
+    local gui = Instance.new("ScreenGui")
+    gui.Name = "JackpotTradeStatus"
+    gui.ResetOnSpawn = false
+    gui.DisplayOrder = 110
+    gui.Parent = playerGui
+    gui.Destroying:Connect(function() uiAlive = false end)
+    local panel = Instance.new("Frame")
+    panel.Position = UDim2.fromOffset(12, 12)
+    panel.Size = UDim2.new(0.92, 0, 0, isReceiver and 244 or 204)
+    panel.BackgroundColor3 = Color3.fromRGB(16, 21, 32)
+    panel.BackgroundTransparency = 0.06
+    panel.BorderSizePixel = 0
+    panel.Parent = gui
+    local limit = Instance.new("UISizeConstraint")
+    limit.MaxSize = Vector2.new(460, isReceiver and 244 or 204)
+    limit.Parent = panel
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 14)
+    corner.Parent = panel
+    local border = Instance.new("UIStroke")
+    border.Color = Color3.fromRGB(58, 78, 104)
+    border.Parent = panel
+    local function label(y, height, size, text)
+        local item = Instance.new("TextLabel")
+        item.BackgroundTransparency = 1
+        item.Position = UDim2.fromOffset(14, y)
+        item.Size = UDim2.new(1, -28, 0, height)
+        item.Font = Enum.Font.GothamBold
+        item.TextSize = size
+        item.TextColor3 = Color3.fromRGB(240, 245, 255)
+        item.TextXAlignment = Enum.TextXAlignment.Left
+        item.TextYAlignment = Enum.TextYAlignment.Center
+        item.TextWrapped = true
+        item.Text = text
+        item.Parent = panel
+        return item
+    end
+    label(9, 26, 18, player.Name)
+    detailLabel = label(37, 32, 12, "Receivers: " .. table.concat(CONFIG.Receivers, ", "))
+    detailLabel.TextColor3 = Color3.fromRGB(158, 176, 203)
+    balanceLabel = label(73, 30, 14, "Items: ...")
+    balanceLabel.TextScaled = true
+    balanceLabel.TextColor3 = Color3.fromRGB(255, 210, 99)
+    statusLabel = label(108, 55, 13, latestStatus)
+    statusDot = Instance.new("Frame")
+    statusDot.Size = UDim2.fromOffset(8, 8)
+    statusDot.Position = UDim2.new(1, -20, 0, 20)
+    statusDot.BackgroundColor3 = Color3.fromRGB(68, 224, 170)
+    statusDot.BorderSizePixel = 0
+    statusDot.Parent = panel
+    local button = Instance.new("TextButton")
+    button.Position = UDim2.fromOffset(14, 169)
+    button.Size = UDim2.new(1, -28, 0, 25)
+    button.BackgroundColor3 = Color3.fromRGB(113, 43, 53)
+    button.Font = Enum.Font.GothamBold
+    button.TextSize = 13
+    button.TextColor3 = Color3.new(1, 1, 1)
+    button.Text = "STOP"
+    button.Parent = panel
+    button.Activated:Connect(function()
+        env.ItemTradeStop = true
+        button.Text = "STOP REQUESTED"
+        showStatus(false, "Stopping; waiting for current operation...")
+    end)
+    if isReceiver then
+        manualHopButton = Instance.new("TextButton")
+        manualHopButton.Position = UDim2.fromOffset(14, 204)
+        manualHopButton.Size = UDim2.new(1, -28, 0, 28)
+        manualHopButton.BackgroundColor3 = Color3.fromRGB(40, 85, 125)
+        manualHopButton.TextColor3 = Color3.new(1, 1, 1)
+        manualHopButton.Font = Enum.Font.GothamBold
+        manualHopButton.TextSize = 12
+        manualHopButton.Text = "HOP TO LOW POPULATION SERVER"
+        manualHopButton.Parent = panel
+        manualHopButton.Activated:Connect(function()
+            if env.ItemTradeStop or not env.ItemTradeRunning or manualHopRequested then return end
+            manualHopRequested = true
+            manualHopButton.Text = "HOP REQUESTED"
+            showStatus(false, "Hop requested; waiting for current trade to finish")
+        end)
+    end
+end)
+if not uiOK then nativeWarn("Status UI failed:", uiError) end
+
 local function main()
-    assert(game.PlaceId == CONFIG.PlaceId, "Wrong game/place")
-    startDisconnectMonitor()
-    assert(type(CONFIG.Receiver) == "string" and CONFIG.Receiver ~= "", "Set Receiver")
-    assert(CONFIG.FromFolderId ~= "" and CONFIG.ToFolderId ~= "", "Set both FarmSync Folder IDs")
+    assert(game.PlaceId == INTERNAL.PlaceId, "Run in the supported game (113290951185459)")
+    assert(CONFIG.EmptyAction == "autochange" or CONFIG.EmptyAction == "hop" or CONFIG.EmptyAction == "none",
+        "EmptyAction must be autochange, hop, or none")
+    assert(#CONFIG.Receivers > 0, "Set at least one receiver username")
+    local receiverNames = {}
+    for _, name in ipairs(CONFIG.Receivers) do
+        assert(type(name) == "string" and name ~= "", "Invalid receiver username")
+        receiverNames[name:lower()] = true
+    end
     local Players = game:GetService("Players")
     local RS = game:GetService("ReplicatedStorage")
-    local TS = game:GetService("TeleportService")
-    local HS = game:GetService("HttpService")
     local player = Players.LocalPlayer
-    local receiverMode = player.Name:lower() == CONFIG.Receiver:lower()
-    local teleportInProgress = false -- กันการวาร์ปหา Receiver ชนกับ Population Hop
-    local tradeBusy = false -- รวมช่วงส่งคำขอ/จัด offer ก่อน activePartner จะเริ่ม
-    assert(type(CONFIG.PopulationHopThreshold) == "number" and CONFIG.PopulationHopThreshold >= 2
-        and CONFIG.PopulationHopThreshold % 1 == 0, "Invalid PopulationHopThreshold")
-    assert(type(CONFIG.PopulationHopConfirmSeconds) == "number" and CONFIG.PopulationHopConfirmSeconds >= 1,
-        "Invalid PopulationHopConfirmSeconds")
-    assert(type(CONFIG.PopulationHopCheckSeconds) == "number" and CONFIG.PopulationHopCheckSeconds > 0,
-        "Invalid PopulationHopCheckSeconds")
-    assert(type(CONFIG.PopulationHopRetrySeconds) == "number" and CONFIG.PopulationHopRetrySeconds >= 5,
-        "Invalid PopulationHopRetrySeconds")
-    assert(type(CONFIG.PopulationHopMaxPages) == "number" and CONFIG.PopulationHopMaxPages >= 1
-        and CONFIG.PopulationHopMaxPages % 1 == 0, "Invalid PopulationHopMaxPages")
-    assert(type(CONFIG.PopulationHopTargetPlayers) == "number" and CONFIG.PopulationHopTargetPlayers >= 0
-        and CONFIG.PopulationHopTargetPlayers % 1 == 0, "Invalid PopulationHopTargetPlayers")
-    local loadedBy = os.clock() + 60
-    while player:GetAttribute("__LOADED") ~= true do
-        assert(os.clock() < loadedBy, "Player data loading timeout")
-        if env.JackpotTradeOnlyStop then return end
-        task.wait(0.25)
+    local receiverMode = receiverNames[player.Name:lower()] == true
+    print("[Autochange] Account:", player.Name, "Receiver mode:", receiverMode)
+    if not receiverMode and CONFIG.EmptyAction == "autochange" and (CONFIG.FarmSync.FromFolderId == "" or CONFIG.FarmSync.ToFolderId == "") then
+        warn("[Autochange] Folder IDs are empty. Fill FromFolderId and ToFolderId before autochange can run.")
     end
-    local function loadModule(path)
+    local function module(path)
+        print("[Autochange] Loading module:", path)
+        local finished = false
+        task.delay(20, function()
+            if not finished then warn("[Autochange] Still waiting for module:", path) end
+        end)
         local node = RS
         for name in path:gmatch("[^.]+") do
             node = node:WaitForChild(name, 20)
             assert(node, "Missing module: " .. path)
         end
-        return require(node)
-    end
-    local data = loadModule("Framework.Features.Data.DataController")
-    local rules = loadModule("Framework.Features.Trading.TradeConfig")
-    local Network = loadModule("Packages.Network")
-    local wanted = {}
-    for _, name in ipairs(CONFIG.Items) do
-        assert(type(name) == "string" and name ~= "", "Invalid item name")
-        assert(not wanted[name], "Duplicate item in CONFIG.Items: " .. name)
-        assert(not table.find(rules.UNTRADEABLE_ENTRIES, name), name .. " cannot be traded")
-        wanted[name] = true
-    end
-    assert(next(wanted), "CONFIG.Items is empty")
-    assert(type(CONFIG.TradeMinimums) == "table", "TradeMinimums must be a table")
-    for itemName, minimum in pairs(CONFIG.TradeMinimums) do
-        assert(wanted[itemName], "TradeMinimums item is not in CONFIG.Items: " .. tostring(itemName))
-        assert(type(minimum) == "number" and minimum >= 1 and minimum < math.huge
-            and minimum % 1 == 0, "TradeMinimums must contain positive integer amounts")
-    end
-    assert(type(CONFIG.MinJackpotToHop) == "number" and CONFIG.MinJackpotToHop >= 1
-        and CONFIG.MinJackpotToHop % 1 == 0, "MinJackpotToHop must be a positive integer")
-    local function inventory()
-        assert(player:GetAttribute("__LOADED") == true, "Player data unavailable")
-        local value = data.Inventory()
-        assert(type(value) == "table", "Inventory unavailable; not treating it as empty")
-        return value
-    end
-    local function itemAmountByName(itemName)
-        local total = 0
-        for _, entry in pairs(inventory()) do
-            assert(type(entry) == "table", "Invalid inventory entry")
-            if entry.name == itemName then
-                assert(type(entry.amount) == "number" and entry.amount >= 0, "Invalid item amount")
-                total = total + entry.amount
-            end
-        end
-        return total
-    end
-    local function jackpotAmount()
-        return itemAmountByName("Jackpot Spin")
-    end
-    -- กันไอดีที่เริ่มต้น Jackpot Spin = 0 ไม่ให้ Autochange ทันที
-    -- ต้องเคยตรวจพบ Jackpot Spin >= 1 ก่อน และบันทึก marker ลง executor workspace
-    local jackpotUnlocked = false
-    local jackpotStateFile
-    if not receiverMode then
-        assert(type(isfile) == "function" and type(writefile) == "function",
-            "Executor file API (isfile/writefile) is required for Jackpot workspace state")
-        local stateFolder = CONFIG.JackpotStateFolder
-        assert(type(stateFolder) == "string" and stateFolder ~= "", "Invalid JackpotStateFolder")
-        if type(isfolder) == "function" and type(makefolder) == "function" then
-            if not isfolder(stateFolder) then makefolder(stateFolder) end
-            jackpotStateFile = stateFolder .. "/jackpot_seen_" .. tostring(player.UserId) .. ".txt"
-        else
-            -- executor บางตัวไม่มี folder API: เก็บ marker ไว้ที่ workspace root แทน
-            jackpotStateFile = "jackpot_seen_" .. tostring(player.UserId) .. ".txt"
-        end
-        jackpotUnlocked = isfile(jackpotStateFile)
-        if jackpotUnlocked then
-            log("Jackpot gate already unlocked from workspace for UserId", player.UserId)
-        end
-    end
-    local function updateJackpotGate()
-        if receiverMode or jackpotUnlocked then return jackpotUnlocked end
-        local amount = jackpotAmount()
-        if amount < 1 then return false end
-        -- เขียน marker ก่อนอนุญาตให้เทรด/Autochange เพื่อให้รอดแม้ script rerun หรือ teleport
-        local ok, err = pcall(function()
-            writefile(jackpotStateFile, tostring(os.time()) .. "|" .. tostring(amount))
-        end)
-        if not ok then
-            warn("[JackpotTrade] Could not save Jackpot workspace state:", err)
-            return false
-        end
-        jackpotUnlocked = true
-        log("Jackpot gate unlocked; detected Jackpot Spin =", amount, "and saved workspace state")
-        return true
-    end
-    local function receiverHere()
-        for _, candidate in ipairs(Players:GetPlayers()) do
-            if candidate.Name:lower() == CONFIG.Receiver:lower() then return candidate end
-        end
-    end
-    local changed = false
-    local lastJackpotWaitLog = -math.huge
-    local function autochangeIfJackpotEmpty()
-        if receiverMode or not CONFIG.AutochangeEnabled or activePartner or tradeBusy or teleportInProgress or changed
-            or env.JackpotTradeOnlyStop then return false end
-        -- ต้องเคยตรวจพบ Jackpot Spin >= 1 และเซฟ workspace marker ก่อน
-        -- Gems และ Trait Reroll ไม่เกี่ยวกับการตัดสินใจ Autochange
-        updateJackpotGate()
-        if not jackpotUnlocked then
-            if jackpotAmount() == 0 and os.clock() - lastJackpotWaitLog >= 15 then
-                lastJackpotWaitLog = os.clock()
-                log("Jackpot Spin = 0; waiting for first Jackpot Spin before Autochange")
-            end
-            return false
-        end
-        if jackpotAmount() > 0 then return false end
-        log("Jackpot gate unlocked; confirming Jackpot Spin = 0 for 5 seconds (other Items ignored)")
-        local began = os.clock()
-        repeat
-            if jackpotAmount() > 0 or activePartner or env.JackpotTradeOnlyStop then return false end
-            task.wait(0.25)
-        until os.clock() - began >= 5
-        local clientBy = os.clock() + 60
-        while not (env.client and type(env.client.ChangeToFolder) == "function") do
-            assert(os.clock() < clientBy, "FarmSync client unavailable after 60 seconds")
-            if jackpotAmount() > 0 or activePartner or env.JackpotTradeOnlyStop then return false end
-            task.wait(0.25)
-        end
-        if jackpotAmount() > 0 or activePartner or env.JackpotTradeOnlyStop then return false end
-        changed = true
-        intentionalExit = true -- ไม่รีจอยแข่งกับ FarmSync ที่กำลังเปลี่ยนไอดี
-        log("Calling FarmSync Autochange: Jackpot Spin is zero")
-        local ok, result = pcall(function()
-            return env.client:ChangeToFolder(CONFIG.FromFolderId, CONFIG.ToFolderId,
-                CONFIG.WithoutReplacement, nil)
-        end)
-        log("Autochange result:", ok, result)
-        assert(ok and result ~= false, "FarmSync Autochange failed; request not repeated")
-        return true
-    end
-    local function httpJSON(url, body)
-        local requestFn = env.request or env.http_request or request or http_request
-        assert(type(requestFn) == "function", "Executor HTTP request unavailable")
-        local response = requestFn({
-            Url = url, Method = body and "POST" or "GET",
-            Headers = {["Content-Type"] = "application/json"},
-            Body = body and HS:JSONEncode(body) or nil,
-        })
-        assert(type(response) == "table", "Invalid HTTP response")
-        local status = tonumber(response.StatusCode or response.Status) or 0
-        assert(status == 0 or (status >= 200 and status < 300), "HTTP " .. status)
-        local result = response.Body or response.body
-        if type(result) == "string" then result = HS:JSONDecode(result) end
-        assert(type(result) == "table", "Invalid HTTP JSON")
+        local result = require(node)
+        finished = true
         return result
     end
-    local receiverUserId
-    local lastHopWaitLog = -math.huge
-    local function followReceiver()
-        if receiverHere() or env.JackpotTradeOnlyStop or teleportInProgress or tradeBusy or changed then return end
-        -- เกณฑ์ Hop เช็ค Jackpot Spin เท่านั้น; Gems/Trait Reroll ไม่ทำให้ Hop
-        local jackpot = jackpotAmount()
-        if jackpot < CONFIG.MinJackpotToHop then
-            if os.clock() - lastHopWaitLog >= 15 then
-                lastHopWaitLog = os.clock()
-                log("Waiting to hop: Jackpot Spin =", jackpot,
-                    "; need at least", CONFIG.MinJackpotToHop)
-            end
-            return
-        end
-        -- บันทึกว่าเคยมี Jackpot ก่อนวาร์ป; ถ้าเซฟไม่ได้ ห้าม Hop เพราะจะทำสถานะสูญหาย
-        if not updateJackpotGate() then return end
-        receiverUserId = receiverUserId or Players:GetUserIdFromNameAsync(CONFIG.Receiver)
-        local body = httpJSON("https://presence.roblox.com/v1/presence/users", {userIds = {receiverUserId}})
-        local presence = body.userPresences and body.userPresences[1]
-        if not presence or presence.userPresenceType ~= 2 or not presence.gameId or presence.gameId == "" then
-            log("Receiver has no joinable server; retrying")
-            return
-        end
-        if tonumber(presence.placeId) ~= CONFIG.PlaceId then
-            log("Receiver is in another place; retrying")
-            return
-        end
-        if presence.gameId == game.JobId then return end
-        -- Recheck the live amount after presence lookup; do not hop on a stale Jackpot reading.
-        if jackpotAmount() < CONFIG.MinJackpotToHop then
-            log("Jackpot Spin dropped below hop threshold; staying in current server")
-            return
-        end
-        if teleportInProgress or tradeBusy or activePartner or changed then return end
-        teleportInProgress = true
-        local failed, failureText = false, ""
-        teleportConnection = TS.TeleportInitFailed:Connect(function(target, result, message)
-            if target == player then
-                failed = true
-                failureText = tostring(result) .. ": " .. tostring(message)
-            end
-        end)
-        log("Joining receiver:", CONFIG.Receiver)
-        local ok, err = pcall(function()
-            TS:TeleportToPlaceInstance(CONFIG.PlaceId, presence.gameId, player)
-        end)
-        if not ok then failed, failureText = true, tostring(err) end
-        local nextNotice = os.clock() + 30
-        while not failed and not env.JackpotTradeOnlyStop do
-            if os.clock() >= nextNotice then
-                log("Teleport still pending; waiting without sending another request")
-                nextNotice = os.clock() + 30
-            end
-            task.wait(0.25)
-        end
-        if teleportConnection then teleportConnection:Disconnect(); teleportConnection = nil end
-        if failed then
-            teleportInProgress = false
-            log("Teleport failed:", failureText)
+    assert(type(INTERNAL.DataLoadNoticeSeconds) == "number" and INTERNAL.DataLoadNoticeSeconds >= 1
+        and INTERNAL.DataLoadNoticeSeconds < math.huge, "Invalid DataLoadNoticeSeconds")
+    local loadingStarted, nextLoadNotice = os.clock(), 0
+    local function loadingNotice(stage)
+        if os.clock() >= nextLoadNotice then
+            print("[ItemTrade] Waiting for data:", stage, math.floor(os.clock() - loadingStarted), "seconds - STOP to cancel")
+            nextLoadNotice = os.clock() + INTERNAL.DataLoadNoticeSeconds
         end
     end
-    -- หาเซิร์ฟเป้าหมาย: 1 คนก่อน; ถ้าไม่มีให้เลือกเซิร์ฟคนน้อยที่ยังมีที่ว่าง
-    -- maxBeforeJoin ใช้สำหรับ Population Hop เพื่อหลีกเลี่ยงย้ายไปเซิร์ฟที่แออัดอีก
-    local function findOnePlayerServer(allowOtherPlayerCounts, maxBeforeJoin)
-        local cursor
-        local fallback, fallbackCount
-        for _ = 1, CONFIG.PopulationHopMaxPages do
-            local url = "https://games.roblox.com/v1/games/" .. tostring(CONFIG.PlaceId)
-                .. "/servers/Public?sortOrder=Asc&limit=100"
-            if cursor and cursor ~= "" then url = url .. "&cursor=" .. HS:UrlEncode(cursor) end
-            local page = httpJSON(url)
-            assert(type(page.data) == "table", "Server-list API returned invalid data")
-            local candidates = {}
-            for _, server in ipairs(page.data) do
-                local count = type(server) == "table" and tonumber(server.playing)
-                local maximum = type(server) == "table" and tonumber(server.maxPlayers)
-                if count and maximum and type(server.id) == "string" and server.id ~= ""
-                    and server.id ~= game.JobId and maximum > count
-                    and (not maxBeforeJoin or count <= maxBeforeJoin) then
-                    if count == CONFIG.PopulationHopTargetPlayers then
-                        table.insert(candidates, server.id)
-                    elseif allowOtherPlayerCounts and (not fallbackCount or count < fallbackCount) then
-                        fallback, fallbackCount = server.id, count
-                    end
+    while not game:IsLoaded() or player:GetAttribute("__LOADED") ~= true do
+        if env.ItemTradeStop then return end
+        loadingNotice("__LOADED")
+        task.wait(0.25)
+    end
+    if env.ItemTradeStop then return end
+    local data = module("Framework.Features.Data.DataController")
+    -- Loaded flag มาก่อนได้ รอ inventory snapshot ที่อ่านได้จริงด้วย
+    while not env.ItemTradeStop do
+        local ok, inventory = pcall(function() return data.Inventory() end)
+        if player:GetAttribute("__LOADED") == true and ok and type(inventory) == "table" then break end
+        loadingNotice("inventory snapshot")
+        task.wait(0.25)
+    end
+    if env.ItemTradeStop then return end
+    print("[ItemTrade] Player data ready:", player.Name)
+    local rules = module("Framework.Features.Trading.TradeConfig")
+    local Network = module("Packages.Network")
+    local wanted = {}
+    local registry = module("Framework.Features.Inventory.EntryRegistry")
+    local function positive(n) return type(n) == "number" and n > 0 and n < math.huge and n % 1 == 0 end
+    assert(CONFIG.JoinConditions.Mode == "all" or CONFIG.JoinConditions.Mode == "any", "Invalid ModeItemsForJoin")
+    for name, count in pairs(CONFIG.Trade.Items) do
+        assert(type(name) == "string" and (count == "all" or positive(count)), "Invalid trade config")
+        local entry = registry.getEntryConfig(name)
+        assert(entry and entry.kind ~= "Unit" and not table.find(rules.UNTRADEABLE_ENTRIES, name), "Untradeable item: " .. name)
+        wanted[name] = true
+    end
+    assert(next(wanted) or CONFIG.Trade.Units.Enabled, "Nothing enabled for trade")
+    local joinWanted = {}
+    for name, count in pairs(CONFIG.JoinConditions.Items) do
+        assert(type(name) == "string" and positive(count), "Invalid join config")
+        joinWanted[name] = true
+    end
+
+    local function configuredItemAmount(selection)
+        selection = selection or wanted
+        assert(player:GetAttribute("__LOADED") == true, "Player data not ready")
+        local inventory = data.Inventory()
+        assert(type(inventory) == "table", "Inventory unavailable; not treating it as zero")
+        local total, amounts = 0, {}
+        for name in pairs(selection) do amounts[name] = 0 end
+        for _, entry in pairs(inventory) do
+            assert(type(entry) == "table", "Invalid inventory entry")
+            if selection[entry.name] then
+                assert(type(entry.amount) == "number" and entry.amount >= 0 and entry.amount < math.huge, "Invalid item amount: " .. entry.name)
+                total = total + entry.amount
+                amounts[entry.name] = amounts[entry.name] + entry.amount
+            end
+        end
+        return total, amounts
+    end
+    local formatter = module("Packages.NumberFormatter")
+    local function incomeLimit(value)
+        local n = type(value) == "number" and value or formatter.ParseCompact(value)
+        assert(type(n) == "number" and n >= 0 and n < math.huge, "Invalid income limit: " .. tostring(value))
+        return n
+    end
+    local U, J = CONFIG.Trade.Units, CONFIG.JoinConditions.Units
+    local tradeMin, tradeMax = incomeLimit(U.MinIncome), incomeLimit(U.MaxIncome)
+    local joinMin, joinMax = incomeLimit(J.MinIncome), incomeLimit(J.MaxIncome)
+    assert(tradeMax == 0 or tradeMax >= tradeMin, "Invalid trade income range")
+    assert(joinMax == 0 or joinMax >= joinMin, "Invalid join income range")
+    assert(positive(J.Count), "Invalid Unit Count")
+    assert(U.Amount == "all" or positive(U.Amount), "Invalid Unit Amount")
+    assert(type(U.KeepPerName) == "number" and U.KeepPerName >= 0 and U.KeepPerName % 1 == 0 and U.KeepPerName < math.huge, "Invalid KeepPerName")
+    assert(U.SendOrder == "lowest" or U.SendOrder == "highest", "Invalid SendOrder")
+    local names = {}
+    for _, name in ipairs(U.Names) do assert(type(name) == "string", "Invalid unit name") names[name] = true end
+    local function availableItems()
+        local _, amounts = configuredItemAmount()
+        if CONFIG.Trade.KeepEquippedGear then
+            local equipped = data.EquippedGear()
+            assert(type(equipped) == "table", "EquippedGear unavailable")
+            local reserved = {}
+            for _, name in pairs(equipped) do
+                if type(name) == "string" and amounts[name] and not reserved[name] then
+                    amounts[name] = math.max(0, amounts[name]-1)
+                    reserved[name] = true
                 end
             end
-            if #candidates > 0 then return candidates[math.random(1, #candidates)] end
-            cursor = page.nextPageCursor
-            if type(cursor) ~= "string" or cursor == "" then break end
         end
-        return fallback
+        return amounts
     end
-
-    local function populationHopAllowed(ignoreOwnTeleportReservation)
-        if receiverMode or not env.JackpotPopulationHopEnabled or not hopThreadAlive
-            or env.JackpotTradeOnlyStop or intentionalExit or changed
-            or (teleportInProgress and not ignoreOwnTeleportReservation)
-            or activePartner or tradeBusy then return false end
-        local amount = jackpotAmount()
-        if amount >= CONFIG.MinJackpotToHop then return false end -- ให้การหา Receiver มาก่อน
-        if amount == 0 and jackpotUnlocked and CONFIG.AutochangeEnabled then return false end
-        -- หาก Receiver อยู่ด้วยตอน Jackpot = 0 ให้ AvoidReceiver จัดการก่อน
-        if CONFIG.AvoidReceiverAtZeroEnabled and amount == 0 and receiverHere() then return false end
-        return true
-    end
-
-    -- หาก Receiver มาอยู่เซิร์ฟเดียวกันขณะยังไม่มี Jackpot ให้หนีไปเซิร์ฟอื่นก่อน
-    -- ไม่รบกวน Autochange หลัง Jackpot ถูกเทรดออก
-    local lastAvoidReceiverAttempt = -math.huge
-    local function avoidReceiverWhenJackpotZero()
-        if receiverMode or not CONFIG.AvoidReceiverAtZeroEnabled or env.JackpotTradeOnlyStop
-            or intentionalExit or changed or teleportInProgress or activePartner or tradeBusy
-            or not receiverHere() or jackpotAmount() ~= 0 then return false end
-        if jackpotUnlocked and CONFIG.AutochangeEnabled then return false end -- Autochange มาก่อน
-        if os.clock() - lastAvoidReceiverAttempt < CONFIG.PopulationHopRetrySeconds then return false end
-        lastAvoidReceiverAttempt = os.clock()
-        teleportInProgress = true -- จองสิทธิ์ก่อนค้นหาเซิร์ฟ ป้องกัน Population Hop ทำงานซ้อน
-        local ok, serverId = pcall(findOnePlayerServer, true) -- เลือกเซิร์ฟ 1 คนก่อน ถ้าไม่มีใช้เซิร์ฟอื่นที่ยังว่าง
-        if not ok or not serverId then
-            teleportInProgress = false
-            warn("[AvoidReceiver] No alternate server available:", not ok and serverId or "not found")
-            return false
-        end
-        -- เช็คสดหลัง API ตอบกลับ: หากมี Jackpot แล้ว ห้ามหนี เพราะควรไปหา Receiver เพื่อเทรด
-        if env.JackpotTradeOnlyStop or changed or not receiverHere() or jackpotAmount() ~= 0
-            or activePartner or tradeBusy or (jackpotUnlocked and CONFIG.AutochangeEnabled) then
-            teleportInProgress = false
-            return false
-        end
-        local failed, failureText = false, ""
-        teleportConnection = TS.TeleportInitFailed:Connect(function(target, result, message)
-            if target == player then
-                failed = true
-                failureText = tostring(result) .. ": " .. tostring(message)
+    local badIncome = {}
+    local function eligibleUnits(minimum, maximum, useNames)
+        if not U.Enabled then return {} end
+        local bag, slots = data.Inventory(), data.Slots()
+        assert(type(bag) == "table", "Inventory unavailable")
+        if U.SkipSlotted then assert(type(slots) == "table", "Slots unavailable") end
+        local placed, groups, result = {}, {}, {}
+        if U.SkipSlotted then
+            for _, slot in pairs(slots) do
+                if type(slot) == "table" and slot.unitId then placed[slot.unitId] = true end
             end
-        end)
-        log("[AvoidReceiver] Jackpot Spin = 0 and Receiver is here; joining another server:", serverId)
-        local sent, problem = pcall(function()
-            TS:TeleportToPlaceInstance(CONFIG.PlaceId, serverId, player)
-        end)
-        if not sent then failed, failureText = true, tostring(problem) end
-        local nextNotice = os.clock() + 30
-        while not failed and not env.JackpotTradeOnlyStop do
-            if os.clock() >= nextNotice then
-                log("[AvoidReceiver] Teleport pending; not sending a duplicate request")
-                nextNotice = os.clock() + 30
-            end
-            task.wait(0.25)
         end
-        if teleportConnection then teleportConnection:Disconnect(); teleportConnection = nil end
-        if failed then
-            teleportInProgress = false
-            warn("[AvoidReceiver] Teleport failed:", failureText)
-            return false
-        end
-        return true -- คำขอส่งแล้ว; ที่เซิร์ฟใหม่ autorun จะเริ่มสคริปต์ให้เอง
-    end
-    -- ตรวจจำนวนคนเสมอ แต่จะย้ายเมื่อ >= 8 คนต่อเนื่องครบ 120 วินาทีเท่านั้น
-    -- ตัวนับรีเซ็ตทันทีเมื่อจำนวนคนลดต่ำกว่าเกณฑ์; ไม่มีการ Hop ตามรอบเวลา
-    local function startPopulationHop()
-        if receiverMode then return end -- Receiver รอรับ Trade ตามระบบเดิม
-        local crowdedSince = nil
-        local nextAttemptAt = 0
-        local removingConnection = Players.PlayerRemoving:Connect(function(leavingPlayer)
-            local roster = Players:GetPlayers()
-            local remaining = #roster - (table.find(roster, leavingPlayer) and 1 or 0)
-            if remaining < CONFIG.PopulationHopThreshold then
-                crowdedSince = nil
-            end
-        end)
-        task.spawn(function()
-            while hopThreadAlive and not env.JackpotTradeOnlyStop do
-                local count = #Players:GetPlayers()
-                local now = os.clock()
-                if not env.JackpotPopulationHopEnabled or count < CONFIG.PopulationHopThreshold then
-                    if crowdedSince and count < CONFIG.PopulationHopThreshold then
-                        log("[PopulationHop] Player count dropped to", count, "; resetting 120-second timer")
-                    end
-                    crowdedSince = nil
+        for key, entry in pairs(bag) do
+            local cfg = registry.getEntryConfig(entry.name)
+            if cfg and cfg.kind == "Unit" then
+                local ok, income = pcall(function() return cfg.income(entry.attributes) end)
+                if ok and type(income) == "number" and income >= 0 and income < math.huge then
+                    groups[entry.name] = groups[entry.name] or {}
+                    table.insert(groups[entry.name], {key=key, name=entry.name, income=income,
+                        protected=(U.SkipSlotted and placed[key]) or (U.SkipLocked and entry.attributes and entry.attributes.locked == true)})
                 else
-                    if not crowdedSince then
-                        crowdedSince = now
-                        log("[PopulationHop] Players:", count, "; starting", CONFIG.PopulationHopConfirmSeconds,
-                            "second confirmation")
-                    elseif now - crowdedSince >= CONFIG.PopulationHopConfirmSeconds
-                        and now >= nextAttemptAt and populationHopAllowed() then
-                        -- จองสิทธิ์ก่อนเรียก API ป้องกันระบบอื่นยิง Teleport ซ้อน
-                        teleportInProgress = true
-                        local ok, serverId = pcall(findOnePlayerServer, true, CONFIG.PopulationHopThreshold - 2)
-                        if not ok or not serverId then
-                            teleportInProgress = false
-                            nextAttemptAt = os.clock() + CONFIG.PopulationHopRetrySeconds
-                            warn("[PopulationHop] No low-population server available:",
-                                not ok and serverId or "not found")
-                        elseif #Players:GetPlayers() < CONFIG.PopulationHopThreshold
-                            or not crowdedSince
-                            or os.clock() - crowdedSince < CONFIG.PopulationHopConfirmSeconds
-                            or not populationHopAllowed(true) then
-                            -- คนลด / ได้ Jackpot / เริ่ม Trade ระหว่างค้นหา: ยกเลิก Hop
-                            teleportInProgress = false
-                            if #Players:GetPlayers() < CONFIG.PopulationHopThreshold then crowdedSince = nil end
-                        else
-                            local failed, failureText = false, ""
-                            teleportConnection = TS.TeleportInitFailed:Connect(function(target, result, message)
-                                if target == player then
-                                    failed = true
-                                    failureText = tostring(result) .. ": " .. tostring(message)
-                                end
-                            end)
-                            log("[PopulationHop] Still", #Players:GetPlayers(), "players after",
-                                CONFIG.PopulationHopConfirmSeconds, "seconds; joining:", serverId)
-                            local sent, problem = pcall(function()
-                                TS:TeleportToPlaceInstance(CONFIG.PlaceId, serverId, player)
-                            end)
-                            if not sent then failed, failureText = true, tostring(problem) end
-                            local nextNotice = os.clock() + 30
-                            while hopThreadAlive and not env.JackpotTradeOnlyStop and not failed do
-                                if os.clock() >= nextNotice then
-                                    log("[PopulationHop] Teleport pending; no duplicate request sent")
-                                    nextNotice = os.clock() + 30
-                                end
-                                task.wait(0.25)
-                            end
-                            if teleportConnection then teleportConnection:Disconnect(); teleportConnection = nil end
-                            if failed then
-                                teleportInProgress = false
-                                nextAttemptAt = os.clock() + CONFIG.PopulationHopRetrySeconds
-                                warn("[PopulationHop] Teleport failed:", failureText)
+                    if not badIncome[key] then warn("Skipped Unit: unreadable income", entry.name, key) badIncome[key] = true end
+                end
+            end
+        end
+        for name, units in pairs(groups) do
+            table.sort(units, function(a,b)
+                if a.income == b.income then return tostring(a.key) < tostring(b.key) end
+                return a.income > b.income
+            end)
+            for i, unit in ipairs(units) do
+                if i > U.KeepPerName and not unit.protected and unit.income >= minimum
+                    and (maximum == 0 or unit.income <= maximum)
+                    and (not useNames or not next(names) or names[name]) then table.insert(result, unit) end
+            end
+        end
+        table.sort(result, function(a,b)
+            if a.income == b.income then return tostring(a.key) < tostring(b.key) end
+            if U.SendOrder == "lowest" then return a.income < b.income end
+            return a.income > b.income
+        end)
+        return result
+    end
+    local campaign -- แผนคงที่ข้ามหลายเทรด เก็บ key ของ Unit และยอด stack เดิม
+    local function joinReady()
+        if campaign and next(campaign.remaining) then return true end -- ส่งแผนเดิมให้ครบก่อน
+        local _, amounts = configuredItemAmount(joinWanted)
+        local any, all, count = false, true, 0
+        for name, minimum in pairs(CONFIG.JoinConditions.Items) do
+            local met = amounts[name] >= minimum
+            any, all, count = any or met, all and met, count+1
+        end
+        if J.Enabled and U.Enabled then
+            local met = #eligibleUnits(joinMin, joinMax, false) >= J.Count
+            any, all, count = any or met, all and met, count+1
+        end
+        if count == 0 then return false end
+        if CONFIG.JoinConditions.Mode == "any" then return any end
+        return all
+    end
+    local function missingTradeItems()
+        if campaign then return "" end
+        local amounts = availableItems()
+        local missing = {}
+        for name, count in pairs(CONFIG.Trade.Items) do
+            if type(count) == "number" and amounts[name] < count then table.insert(missing, name .. " " .. amounts[name] .. "/" .. count) end
+        end
+        if U.Enabled and type(U.Amount) == "number" and #eligibleUnits(tradeMin, tradeMax, true) < U.Amount then
+            table.insert(missing, "Units below required amount")
+        end
+        return table.concat(missing, ", ")
+    end
+    local function createCampaign()
+        local bag, amounts = data.Inventory(), availableItems()
+        local result = {remaining={}, labels={}, order={}}
+        local remaining = {}
+        for name, count in pairs(CONFIG.Trade.Items) do remaining[name] = count == "all" and amounts[name] or count end
+        local keys = {}
+        for key in pairs(bag) do table.insert(keys,key) end
+        table.sort(keys, function(a,b) return tostring(a)<tostring(b) end)
+        for _, key in ipairs(keys) do
+            local entry = bag[key]
+            if remaining[entry.name] then
+                local n = math.min(entry.amount, remaining[entry.name])
+                if n > 0 then
+                    result.remaining[key],result.labels[key] = n,entry.name
+                    table.insert(result.order,key)
+                end
+                remaining[entry.name] = remaining[entry.name]-n
+            end
+        end
+        if U.Enabled then
+            local units = eligibleUnits(tradeMin, tradeMax, true)
+            for i=1,(U.Amount == "all" and #units or U.Amount) do
+                local unit = assert(units[i], "Not enough Units")
+                result.remaining[unit.key], result.labels[unit.key] = 1,unit.name
+                table.insert(result.order,unit.key)
+            end
+        end
+        return result
+    end
+    local function validateBatch(batch)
+        local bag, amounts = data.Inventory(), availableItems()
+        local units = {}
+        for _, u in ipairs(eligibleUnits(tradeMin, tradeMax, true)) do units[u.key] = true end
+        local totals = {}
+        for key, amount in pairs(batch) do
+            local entry = bag[key]
+            assert(entry and entry.name == campaign.labels[key] and entry.amount >= amount, "Planned item missing/changed")
+            local cfg = registry.getEntryConfig(entry.name)
+            if cfg.kind == "Unit" then assert(units[key], "Planned Unit now protected or outside filters")
+            else totals[entry.name] = (totals[entry.name] or 0)+amount end
+        end
+        for name, count in pairs(totals) do assert(amounts[name] >= count, "Gear reserve or inventory no longer sufficient") end
+    end
+    task.spawn(function()
+        while env.ItemTradeRunning and uiAlive do
+            local ok, amount, amounts = pcall(configuredItemAmount)
+            if balanceLabel then
+                local parts = {}
+                if ok then
+                    for name in pairs(CONFIG.Trade.Items) do
+                        table.insert(parts, name .. ": " .. tostring(amounts[name]))
+                    end
+                end
+                if ok and U.Enabled then
+                    local good, units = pcall(eligibleUnits, tradeMin, tradeMax, true)
+                    table.insert(parts, good and ("Eligible Units: " .. #units) or "Units: unavailable")
+                end
+                balanceLabel.Text = ok and table.concat(parts, " | ") or "Items: waiting for data"
+            end
+            if detailLabel then
+                detailLabel.Text = (receiverMode and "RECEIVER" or "SENDER / " .. CONFIG.EmptyAction) .. " → " .. table.concat(CONFIG.Receivers, ", ")
+            end
+            task.wait(0.5)
+        end
+    end)
+    local function receiverHere()
+        for _, candidate in ipairs(Players:GetPlayers()) do
+            if receiverNames[candidate.Name:lower()] then return candidate end
+        end
+    end
+    local hopAway
+    local completedTrade = false
+    local accountState, statePath
+    local completionEvidence
+    local HS = game:GetService("HttpService")
+    local function saveAccountState(status)
+        if receiverMode then return end
+        accountState = {
+            version = 2, action = CONFIG.EmptyAction, jobId = game.JobId, userId = player.UserId, username = player.Name,
+            placeId = INTERNAL.PlaceId, status = status, updatedAt = os.time(),
+            completionEvidence = completionEvidence, campaign = campaign,
+        }
+        local encoded = HS:JSONEncode(accountState)
+        writefile(statePath, encoded)
+        assert(readfile(statePath) == encoded, "State save verification failed; stopped")
+        print("[ItemTrade] Saved account state:", status)
+    end
+    if not receiverMode then
+        assert(type(isfile) == "function" and type(readfile) == "function"
+            and type(writefile) == "function" and type(isfolder) == "function"
+            and type(makefolder) == "function", "Executor file APIs required for account state")
+        assert(type(INTERNAL.StateDirectory) == "string" and INTERNAL.StateDirectory:match("^[%w_-]+$"), "Invalid state directory")
+        if not isfolder(INTERNAL.StateDirectory) then makefolder(INTERNAL.StateDirectory) end
+        statePath = INTERNAL.StateDirectory .. "/" .. tostring(player.UserId) .. ".json"
+        if isfile(statePath) then
+            accountState = HS:JSONDecode(readfile(statePath))
+            assert(type(accountState) == "table" and accountState.version == 2
+                and accountState.userId == player.UserId and accountState.placeId == INTERNAL.PlaceId,
+                "Invalid account state; inspect file, not treating as new account")
+            campaign = accountState.campaign
+            if campaign then
+                assert(type(campaign.remaining) == "table" and type(campaign.labels) == "table" and type(campaign.order) == "table", "Invalid saved campaign")
+                local seen = {}
+                for _, key in ipairs(campaign.order) do
+                    assert(type(key) == "string" and not seen[key], "Invalid campaign order")
+                    seen[key] = true
+                end
+                for key, count in pairs(campaign.remaining) do
+                    assert(seen[key] and positive(count) and type(campaign.labels[key]) == "string", "Invalid saved quantity")
+                end
+            end
+            assert(accountState.status == "farming" or accountState.status == "awaiting_action"
+                or accountState.status == "autochange_pending" or accountState.status == "done" or accountState.status == "hop_pending" or accountState.status == "trade_pending" or accountState.status == "batch_ready", "Unknown account state")
+            assert(accountState.status ~= "autochange_pending",
+                "Previous Autochange outcome unknown; inspect FarmSync and state file before retry")
+            if accountState.status == "trade_pending" then
+                local proof = accountState.completionEvidence
+                local recovered
+                if proof and type(proof.attemptId) == "string" and logPath and isfile(logPath) then
+                    for line in readfile(logPath):gmatch("[^\n]+") do
+                        local encoded = line:match("TRADE_RESULT (.+)$")
+                        if encoded then
+                            local ok, evidence = pcall(HS.JSONDecode, HS, encoded)
+                            if ok and type(evidence) == "table" and evidence.attemptId == proof.attemptId
+                                and evidence.userId == player.UserId and evidence.receiver == proof.receiver then
+                                if evidence.result == "Completed" or evidence.result == "Cancelled" then recovered = evidence end
                             end
                         end
                     end
                 end
-                task.wait(CONFIG.PopulationHopCheckSeconds)
-            end
-            removingConnection:Disconnect()
-        end)
-    end
-
-    startPopulationHop()
-    if not receiverMode then
-        log("Observing configured items for", CONFIG.ObserveSeconds, "seconds")
-        pause(CONFIG.ObserveSeconds)
-        if env.JackpotTradeOnlyStop then return end
-        if autochangeIfJackpotEmpty() then return end
-        while not env.JackpotTradeOnlyStop do
-            if autochangeIfJackpotEmpty() then return end
-            if receiverHere() then
-                if not CONFIG.AvoidReceiverAtZeroEnabled or jackpotAmount() > 0 then
-                    break -- มี Jackpot: อยู่กับ Receiver เพื่อเข้าสู่ระบบเทรด
+                if recovered then
+                    completionEvidence = proof
+                    completionEvidence.completedAt = recovered.at
+                    if recovered.result == "Completed" and campaign then
+                        for key in pairs(proof.offer) do campaign.remaining[key] = nil end
+                    end
+                    saveAccountState(recovered.result == "Completed" and (campaign and next(campaign.remaining) and "batch_ready" or "awaiting_action") or (campaign and "batch_ready" or "farming"))
+                    print("Recovered trade result from matching attempt:", recovered.result)
+                else
+                    error("Trade outcome unknown: no matching completion/cancellation evidence; no trade or action sent")
                 end
-                -- Jackpot = 0: ยังไม่เทรด Gems/Trait Reroll ให้ลองออกจากเซิร์ฟก่อน
-                local ok, err = pcall(avoidReceiverWhenJackpotZero)
-                if not ok then log("AvoidReceiver error:", err) end
-            else
-                local ok, err = pcall(followReceiver)
-                if not ok then log("Follow error:", err) end
             end
-            pause(CONFIG.ReceiverRetrySeconds)
+            assert(accountState.status == "farming" or accountState.action == CONFIG.EmptyAction, "Pending action differs from CONFIG; inspect state")
+            if accountState.status == "done" then print("Action none already completed; stopped") return end
+            if accountState.status == "hop_pending" and accountState.jobId ~= game.JobId then
+                campaign = nil
+                saveAccountState("farming")
+            end
+            completionEvidence = accountState.completionEvidence
+            completedTrade = accountState.status == "awaiting_action" or accountState.status == "hop_pending"
+            print("[ItemTrade] Restored account state:", accountState.status)
+        else
+            saveAccountState("farming")
         end
-        if env.JackpotTradeOnlyStop then return end
+    end
+    for _, value in ipairs({INTERNAL.AutochangeRetrySeconds, INTERNAL.AutochangeResponseTimeout}) do
+        assert(type(value) == "number" and value >= 1 and value < math.huge, "Invalid Autochange timing")
+    end
+    local function autochangeAfterTrade()
+        if receiverMode or activePartner or env.ItemTradeStop or not completedTrade then return false end
+        local attempt = 0
+        while not env.ItemTradeStop do
+            assert(CONFIG.FarmSync.FromFolderId ~= "" and CONFIG.FarmSync.ToFolderId ~= "", "Set both FarmSync Folder IDs")
+            while not (env.client and type(env.client.ChangeToFolder) == "function") do
+                if env.ItemTradeStop or not completedTrade then return false end
+                print("[Autochange] Waiting for FarmSync client")
+                task.wait(1)
+            end
+            if env.ItemTradeStop or activePartner or not completedTrade then return false end
+            attempt = attempt + 1
+            saveAccountState("autochange_pending")
+            env.ItemTradeAutochangeUncertain = true
+            print("[Autochange] Sending request; attempt:", attempt)
+            local finished, ok, result = false, false, nil
+            task.spawn(function()
+                ok, result = pcall(function()
+                    return env.client:ChangeToFolder(CONFIG.FarmSync.FromFolderId, CONFIG.FarmSync.ToFolderId, CONFIG.FarmSync.WithoutReplacement, nil)
+                end)
+                record("FarmSync response: ok=" .. tostring(ok) .. " result=" .. tostring(result))
+                finished = true
+            end)
+            local deadline = os.clock() + INTERNAL.AutochangeResponseTimeout
+            while not finished and os.clock() < deadline do task.wait(0.25) end
+            if not finished or not ok or result ~= false then
+                local reason = not finished and "Request pending past timeout"
+                    or not ok and "Request raised an error"
+                    or result == true and "FarmSync returned true; awaiting account switch"
+                    or "FarmSync outcome unknown"
+                -- รวม true: ไม่มีหลักฐานว่าตัวใหม่เข้าแล้ว จึงไม่ยิงซ้ำหรือกลับเทรด
+                warn("[Autochange]", reason, "No duplicate request; check FarmSync. Log:", logPath)
+                while not env.ItemTradeStop do task.wait(1) end
+                return true
+            end
+            saveAccountState("awaiting_action")
+            env.ItemTradeAutochangeUncertain = false
+            local retryAt = os.clock() + INTERNAL.AutochangeRetrySeconds
+            while os.clock() < retryAt and not env.ItemTradeStop do
+                print("[Autochange] Returned false; retry in", math.ceil(retryAt - os.clock()), "seconds")
+                task.wait(1)
+            end
+        end
+        return false
+    end
+    local function changeIfEmpty()
+        if receiverMode or activePartner or env.ItemTradeStop or not completedTrade then return false end
+        if CONFIG.EmptyAction == "autochange" then return autochangeAfterTrade() end
+        if CONFIG.EmptyAction == "none" then
+            saveAccountState("done")
+            print("Trade completed; action none - stopped")
+            return true
+        end
+        saveAccountState("hop_pending")
+        hopAway(function() return completedTrade end)
+        return true
+    end
+    local serverRetryAt = 0
+    local serverBackoff = INTERNAL.ServerRateLimitWait
+    assert(type(serverBackoff) == "number" and serverBackoff >= 10 and serverBackoff < math.huge,
+        "ServerRateLimitWait must be at least 10 seconds")
+    local function httpJSON(url, body)
+        local http = env.request or env.http_request or request or http_request
+        assert(type(http) == "function", "HTTP request unavailable")
+        local HS = game:GetService("HttpService")
+        local isServerList = not body and url:find("https://games.roblox.com/v1/games/", 1, true) == 1
+            and url:find("/servers/Public", 1, true) ~= nil
+        while true do
+        if isServerList then
+            local nextNotice = 0
+            while not env.ItemTradeStop and os.clock() < serverRetryAt do
+                if os.clock() >= nextNotice then
+                    local remaining = math.ceil(serverRetryAt - os.clock())
+                    print("[ItemTrade] HTTP 429: waiting", remaining, "seconds; will retry automatically")
+                    if manualHopRequested and manualHopButton then manualHopButton.Text = "RETRY IN " .. remaining .. "s" end
+                    nextNotice = os.clock() + 5
+                end
+                task.wait(0.25)
+            end
+            if env.ItemTradeStop then return {data = {}} end
+        end
+        local response = http({Url = url, Method = body and "POST" or "GET",
+            Headers = {["Content-Type"] = "application/json"},
+            Body = body and HS:JSONEncode(body) or nil})
+        assert(type(response) == "table", "Invalid HTTP response")
+        local status = tonumber(response.StatusCode or response.Status or response.status_code) or 0
+        if status == 429 and isServerList then
+            local retryAfter
+            local headers = response.Headers or response.headers
+            if type(headers) == "table" then
+                for key, value in pairs(headers) do
+                    if tostring(key):lower() == "retry-after" then retryAfter = tonumber(value) end
+                end
+            end
+            if not retryAfter or retryAfter ~= retryAfter or retryAfter < 0 or retryAfter == math.huge then
+                retryAfter = 0
+            end
+            serverRetryAt = os.clock() + math.max(serverBackoff, retryAfter) + math.random(3, 15)
+            serverBackoff = math.min(serverBackoff * 2, math.max(300, INTERNAL.ServerRateLimitWait))
+        else
+        assert(status == 0 or (status >= 200 and status < 300), "HTTP " .. status)
+        local result = response.Body or response.body
+        if type(result) == "string" then result = HS:JSONDecode(result) end
+        assert(type(result) == "table", "Invalid JSON response")
+        if isServerList then serverBackoff = INTERNAL.ServerRateLimitWait end
+        return result
+        end
+        end
+    end
+    local function pause(seconds)
+        local untilTime = os.clock() + seconds
+        while not env.ItemTradeStop and os.clock() < untilTime do task.wait(0.25) end
+    end
+    local function teleport(jobId, label)
+        if env.ItemTradeStop then return end
+        local TS = game:GetService("TeleportService")
+        local failed = false
+        local startedAt, phase = os.clock(), "requested"
+        local phaseListener = player.OnTeleport:Connect(function(state)
+            phase = tostring(state)
+            print("Teleport phase:", phase, "target:", jobId)
+        end)
+        local listener = TS.TeleportInitFailed:Connect(function(p, result, message)
+            if p == player then
+                failed = true
+                warn("[ItemTrade] Join failed:", label, result, message)
+            end
+        end)
+        print("[ItemTrade] Joining:", label, "(autorun required after teleport)")
+        local ok, err = pcall(function() TS:TeleportToPlaceInstance(INTERNAL.PlaceId, jobId, player) end)
+        -- Keep only one teleport outstanding. Explicit failures allow the next receiver.
+        local nextNotice = os.clock() + 30
+        while ok and not failed and not env.ItemTradeStop do
+            if os.clock() >= nextNotice then
+                local elapsed = math.floor(os.clock() - startedAt)
+                if elapsed >= 60 then
+                    warn("Teleport outcome unknown; no duplicate request:", label, jobId, "phase:", phase, "elapsed:", elapsed)
+                else
+                    print("Teleport pending:", label, jobId, "phase:", phase, "elapsed:", elapsed)
+                end
+                nextNotice = os.clock() + 30
+            end
+            task.wait(0.25)
+        end
+        listener:Disconnect()
+        phaseListener:Disconnect()
+        if not ok then warn("[ItemTrade] Teleport failed:", err) end
+    end
+    local knownReceiverJobs = {}
+    local userIds = {}
+    local nextReceiver = 1
+    local function routeToReceiver()
+        if receiverHere() then return end
+        for _ = 1, #CONFIG.Receivers do
+            if env.ItemTradeStop or receiverHere() then return end
+            if not joinReady() then
+                print("[ItemTrade] Waiting for ItemsForJoin before following receiver")
+                return
+            end
+            local name = CONFIG.Receivers[nextReceiver]
+            nextReceiver = nextReceiver % #CONFIG.Receivers + 1
+            local ok, presence = pcall(function()
+                userIds[name] = userIds[name] or Players:GetUserIdFromNameAsync(name)
+                local body = httpJSON("https://presence.roblox.com/v1/presence/users", {userIds = {userIds[name]}})
+                return body.userPresences and body.userPresences[1]
+            end)
+            if ok and presence and presence.userPresenceType == 2
+                and tonumber(presence.placeId) == INTERNAL.PlaceId
+                and type(presence.gameId) == "string" and presence.gameId ~= ""
+                and presence.gameId ~= game.JobId then
+                knownReceiverJobs[presence.gameId] = true
+                if joinReady() and not env.ItemTradeStop then teleport(presence.gameId, name) end
+            else
+                print("[ItemTrade] Receiver unavailable:", name, ok and "no joinable server returned" or presence)
+            end
+            pause(1)
+        end
+    end
+    local rng = Random.new()
+    assert(type(INTERNAL.HopPoolSize) == "number" and INTERNAL.HopPoolSize >= 1 and INTERNAL.HopPoolSize % 1 == 0, "Invalid HopPoolSize")
+    assert(INTERNAL.HopJitterMin >= 0 and INTERNAL.HopJitterMax >= INTERNAL.HopJitterMin and INTERNAL.HopJitterMax < math.huge, "Invalid hop delay")
+    hopAway = function(whileEligible)
+        local function canHop()
+            return not env.ItemTradeStop and not activePartner and (not whileEligible or whileEligible())
+        end
+        if receiverHere() then knownReceiverJobs[game.JobId] = true end
+        local tried = {}
+        while canHop() do
+            local cursor, candidates = nil, {}
+            for page = 1, 3 do
+                local url = "https://games.roblox.com/v1/games/" .. INTERNAL.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100&excludeFullGames=true"
+                if cursor then url = url .. "&cursor=" .. HS:UrlEncode(cursor) end
+                local ok, body = pcall(httpJSON, url)
+                if not ok then warn("Hop server search failed:", body) break end
+                for _, server in ipairs(body.data or {}) do
+                    if type(server.id) == "string" and server.id ~= game.JobId and not knownReceiverJobs[server.id]
+                        and (not tried[server.id] or os.clock() - tried[server.id] > 120)
+                        and tonumber(server.playing) and tonumber(server.maxPlayers)
+                        and tonumber(server.playing) < tonumber(server.maxPlayers) then
+                        table.insert(candidates, server)
+                    end
+                end
+                cursor = body.nextPageCursor
+                if #candidates >= INTERNAL.HopPoolSize or not cursor or cursor == "" then break end
+            end
+            table.sort(candidates, function(a,b) return tonumber(a.playing) < tonumber(b.playing) end)
+            if #candidates > 0 then
+                local target = candidates[rng:NextInteger(1, math.min(#candidates, INTERNAL.HopPoolSize))]
+                local delay = rng:NextNumber(INTERNAL.HopJitterMin, INTERNAL.HopJitterMax)
+                print("Random low-pop hop:", target.id, "players:", target.playing, "delay:", delay)
+                pause(delay)
+                if not canHop() then return end
+                tried[target.id] = os.clock()
+                teleport(target.id, "random low population")
+            end
+            if canHop() then pause(INTERNAL.HopRetrySeconds) end
+        end
+    end
+    local function freeReceiverSlot()
+        local function eligible()
+            return CONFIG.HopWhenNotReadyWithReceiver and not receiverMode
+                and not completedTrade and receiverHere() ~= nil
+                and not joinReady()
+        end
+        if eligible() then
+            print("[ItemTrade] No ItemsForJoin; leaving receiver server to free a slot")
+            hopAway(eligible)
+        end
+    end
+    if not receiverMode then
+        local observeUntil = os.clock() + INTERNAL.ObserveSeconds
+        repeat
+            print("[ItemTrade] Observing inventory. Configured item total:", (configuredItemAmount()))
+            task.wait(1)
+            if env.ItemTradeStop then return end
+        until os.clock() >= observeUntil
+        if changeIfEmpty() then return end
+        freeReceiverSlot()
+        while not receiverHere() and not env.ItemTradeStop do
+            if changeIfEmpty() then return end
+            routeToReceiver()
+            pause(INTERNAL.ServerRetrySeconds)
+        end
+        if env.ItemTradeStop then return end
     end
     local comm = Network.ClientComm.new(RS.Network, false, "TradeService")
     local tradingEnabled = comm:GetProperty("TradingEnabled")
-    local propertyBy = os.clock() + 15
-    while tradingEnabled:Get() == nil and os.clock() < propertyBy do task.wait(0.1) end
-    assert(tradingEnabled:Get() == true, "Trading unavailable")
+    local propertyDeadline = os.clock() + 15
+    while tradingEnabled:Get() == nil and os.clock() < propertyDeadline do task.wait(0.1) end
+    print("[ItemTrade] TradingEnabled:", tradingEnabled:Get(), "AccountAge:", player.AccountAge,
+        "Rolls:", data.Rolls(), "Receivers:", table.concat(CONFIG.Receivers, ", "))
+    assert(tradingEnabled:Get() == true, "Trading unavailable or server property not loaded")
     assert(player.AccountAge >= rules.MIN_ACCOUNT_AGE, "Account too new to trade")
-    assert(data.Rolls() >= rules.MIN_ROLLS, "Not enough rolls to trade")
-    local requestSignal = comm:GetSignal("RequestTrade")
-    local respondSignal = comm:GetSignal("RespondToRequest")
-    local offerSignal = comm:GetSignal("ChangeOffer")
-    local advanceSignal = comm:GetSignal("AdvanceTrade")
-    cancelSignal = comm:GetSignal("CancelTrade")
-    local state, ended, fatal, awaiting, plan
-    local incomingOfferRejected = false
-    local tradeSequence = 0 -- Identify consecutive trades even when Ended/Started occur between loop ticks.
-    local lastAdvance = -math.huge
-    local confirmSent = -math.huge
-    local readySent = false
-    tradeConnection = comm:GetSignal("TradeEvent"):Connect(function(event, payload)
-        if event == "RequestReceived" and receiverMode then
-            if not env.JackpotTradeOnlyStop and not activePartner and payload
-                and typeof(payload.player) == "Instance" and payload.player:IsA("Player") then
-                respondSignal:Fire(true)
+    assert(data.Rolls() >= rules.MIN_ROLLS, "Not enough rolls to unlock trading")
+    local request = comm:GetSignal("RequestTrade")
+    local respond = comm:GetSignal("RespondToRequest")
+    local change = comm:GetSignal("ChangeOffer")
+    local advance = comm:GetSignal("AdvanceTrade")
+    cancel = comm:GetSignal("CancelTrade")
+    local state, ended, fatal, plan, awaiting
+    local rejectedTrade, nextCancelAt, rejectedAt
+    local blockedSenders = {}
+    local receiverMoving = false
+    local lastAcceptedRequest = -math.huge
+    local advances = {}
+    local lastAdvanceAt = -math.huge
+    local phaseChangedAt = 0
+    local function stop(reason)
+        if receiverMode then
+            if not rejectedTrade then
+                rejectedTrade, rejectedAt, nextCancelAt = reason, os.clock(), 0
+                if activePartner then blockedSenders[activePartner.UserId] = os.clock() + 60 end
+                warn("Rejecting this trade only:", reason)
             end
+            return
+        end
+        fatal = reason
+        if activePartner then cancel:Fire() end
+    end
+    connection = comm:GetSignal("TradeEvent"):Connect(function(event, payload)
+        print("[ItemTrade] Event:", event, "Phase:", payload and payload.phase,
+            "Reason:", payload and payload.reason)
+        if event == "RequestReceived" and receiverMode then
+            if env.ItemTradeStop or activePartner or rejectedTrade or fatal or receiverMoving or manualHopRequested then return end
+            if not payload or typeof(payload.player) ~= "Instance"
+                or not payload.player:IsA("Player") or payload.player == player then return end
+            if type(payload.expiresAt) == "number"
+                and payload.expiresAt <= workspace:GetServerTimeNow() then return end
+            if (blockedSenders[payload.player.UserId] or 0) > os.clock() then
+                respond:Fire(false)
+                return
+            end
+            print("[ItemTrade] Accepting incoming request from:", payload.player.Name)
+            lastAcceptedRequest = os.clock()
+            respond:Fire(true)
         elseif event == "Started" then
-            tradeSequence = tradeSequence + 1
-            activePartner, state, ended = payload.partner, nil, nil
-            incomingOfferRejected = false
-            readySent, confirmSent = false, -math.huge
-            if not receiverMode and activePartner ~= awaiting then fatal = "Unexpected trade partner" end
+            activePartner = payload.partner
+            state, ended, advances = nil, nil, {}
+            lastAdvanceAt, phaseChangedAt = -math.huge, os.clock()
+            if not receiverMode and activePartner ~= awaiting then
+                stop("Unexpected trade partner")
+            end
         elseif event == "Updated" and activePartner then
-            if payload.partner ~= activePartner then fatal = "Trade partner changed" else state = payload end
+            if payload.partner ~= activePartner then stop("Partner changed") return end
+            if not state or payload.phase ~= state.phase then
+                phaseChangedAt = os.clock()
+            end
+            -- A confirmed Ready that is reset by an offer change may be sent again.
+            if state and state.ownReady and not payload.ownReady and payload.phase == "Offer" then
+                advances.Offer = nil
+                advances.Confirm = nil
+            end
+            state = payload
+            print("[ItemTrade] Server state: ready=", payload.ownReady,
+                "accepted=", payload.ownAccepted, "partnerReady=", payload.otherReady)
         elseif event == "Ended" and activePartner then
-            ended, activePartner, state = payload.reason, nil, nil
-            incomingOfferRejected = false
+            ended = payload.reason
+            if not receiverMode and ended == "Completed" and activePartner == awaiting and not fatal and plan then
+                local saved, saveError = pcall(function()
+                    assert(state and state.ownOffer, "Missing final offer evidence")
+                    for key, amount in pairs(plan) do assert(state.ownOffer[key] == amount, "Final offer does not match plan") end
+                    for key in pairs(state.ownOffer) do assert(plan[key], "Unexpected final item") end
+                    assert(next(state.otherOffer) == nil, "Unexpected receiver offer")
+                    completionEvidence = {attemptId = completionEvidence.attemptId, receiver = activePartner.Name, completedAt = os.time(), offer = plan}
+                    record("TRADE_RESULT " .. HS:JSONEncode({attemptId = completionEvidence.attemptId,
+                        userId = player.UserId, receiver = activePartner.Name, result = "Completed", at = os.time()}))
+                    for key in pairs(plan) do campaign.remaining[key] = nil end
+                    saveAccountState(next(campaign.remaining) and "batch_ready" or "awaiting_action")
+                end)
+                if saved then completedTrade = not next(campaign.remaining)
+                else fatal = "Completed trade but state save failed: " .. tostring(saveError) end
+            end
+            if not receiverMode and ended == "Cancelled" then
+                local saved, problem = pcall(function()
+                    if completionEvidence and completionEvidence.attemptId then
+                        record("TRADE_RESULT " .. HS:JSONEncode({attemptId = completionEvidence.attemptId,
+                            userId = player.UserId, receiver = activePartner.Name, result = "Cancelled", at = os.time()}))
+                    end
+                    saveAccountState(campaign and "batch_ready" or "farming")
+                end)
+                if not saved then fatal = tostring(problem) end
+            end
+            if not receiverMode and ended ~= "Completed" and ended ~= "Cancelled" then
+                fatal = "Trade ended with unverified outcome: " .. tostring(ended) .. "; pending state retained"
+            end
+            activePartner, state = nil, nil
+            rejectedTrade, rejectedAt, nextCancelAt = nil, nil, nil
         end
     end)
     local function waitFor(predicate, seconds)
-        local deadline = os.clock() + seconds
+        local limit = os.clock() + seconds
         repeat
             if fatal then error(fatal) end
-            if env.JackpotTradeOnlyStop then return false end
+            if env.ItemTradeStop then return false end
             if predicate() then return true end
             task.wait(0.1)
-        until os.clock() >= deadline
+        until os.clock() >= limit
         return false
     end
     local function exactOffer(offer)
@@ -638,234 +963,261 @@ local function main()
         for key, amount in pairs(offer) do if plan[key] ~= amount then return false end end
         return true
     end
-    local function advance()
-        if not state or not activePartner then return end
+    local function advanceOnce()
+        if not state or not activePartner or env.ItemTradeStop then return end
         local now = os.clock()
-        if now - lastAdvance < 0.35 then return end
-        if state.phase == "Offer" and not state.ownReady and not readySent then
-            lastAdvance = now
-            readySent = true -- Ready toggles server-side, so never send it blindly twice.
-            advanceSignal:Fire()
-        elseif state.phase == "Confirm" and not state.ownAccepted
-            and now - confirmSent >= CONFIG.ConfirmRetrySeconds then
-            lastAdvance, confirmSent = now, now
-            advanceSignal:Fire()
+        if now - lastAdvanceAt < INTERNAL.AdvanceGap
+            or now - phaseChangedAt < INTERNAL.AdvanceGap then return end
+        local key
+        if state.phase == "Offer" and not state.ownReady then key = "Offer"
+        elseif state.phase == "Confirm" and not state.ownAccepted then key = "Confirm" end
+        -- Ready toggles on the server: never resend it blindly.
+        -- Accept is idempotent during Confirm, so retry until acknowledged.
+        local retryAccept = key == "Confirm" and advances.Confirm
+            and now - advances.Confirm >= INTERNAL.ConfirmRetryInterval
+        if key and (not advances[key] or retryAccept) then
+            print("[ItemTrade] Sending confirmation:", key)
+            advances[key] = now
+            lastAdvanceAt = now
+            advance:Fire()
         end
     end
+    print("[ItemTrade] Mode:", receiverMode and "RECEIVER (automatic acceptance)" or "SENDER")
     if receiverMode then
         if data.TradeRequestsEnabled() ~= true then
             comm:GetSignal("SetTradeRequestsEnabled"):Fire(true)
             assert(waitFor(function() return data.TradeRequestsEnabled() == true end, 10),
-                "Could not enable trade requests")
+                "Could not enable incoming trade requests")
         end
-        log("Receiver mode: accepting", table.concat(CONFIG.Items, ", "))
-        local started, cancelRequestedAt, lastCancelAttemptAt, lastStatusLogAt, observedTradeSequence
-        local function receiverStatus()
-            if not state then return "state=waiting" end
-            local count = 0
-            if type(state.otherOffer) == "table" then
-                for _ in pairs(state.otherOffer) do count = count + 1 end
+        local tradeStarted
+        local fullSince, fullRoster
+        local nextHopAttempt, nextRosterNotice = 0, 0
+        local function resetRosterTimer()
+            fullSince, fullRoster = nil, nil
+        end
+        -- Events also catch someone leaving and rejoining between polling ticks.
+        table.insert(rosterConnections, Players.PlayerAdded:Connect(resetRosterTimer))
+        table.insert(rosterConnections, Players.PlayerRemoving:Connect(resetRosterTimer))
+        local function checkStuckServer()
+            if not CONFIG.ReceiverHopWhenStuck then return end
+            local members = Players:GetPlayers()
+            if Players.MaxPlayers <= 0 or #members < Players.MaxPlayers then
+                resetRosterTimer()
+                return
             end
-            return "phase=" .. tostring(state.phase)
-                .. " items=" .. tostring(count)
-                .. " senderReady=" .. tostring(state.otherReady)
-                .. " receiverReady=" .. tostring(state.ownReady)
-                .. " senderAccepted=" .. tostring(state.otherAccepted)
-                .. " receiverAccepted=" .. tostring(state.ownAccepted)
+            local ids = {}
+            for _, member in ipairs(members) do table.insert(ids, tostring(member.UserId)) end
+            table.sort(ids)
+            local signature = table.concat(ids, ",")
+            local now = os.clock()
+            if fullRoster ~= signature then
+                fullRoster, fullSince = signature, now
+            end
+            local elapsed = now - fullSince
+            if now >= nextRosterNotice then
+                print("[ItemTrade] Full server / same players:", math.floor(elapsed), "/", INTERNAL.ReceiverStuckSeconds, "seconds")
+                nextRosterNotice = now + 15
+            end
+            if elapsed < INTERNAL.ReceiverStuckSeconds or now < nextHopAttempt
+                or activePartner or now - lastAcceptedRequest < rules.REQUEST_DURATION + 2 then return end
+            nextHopAttempt = now + INTERNAL.ReceiverHopRetrySeconds
+            receiverMoving = true
+            local observedSince = fullSince
+            local ok, result = pcall(function()
+                local body = httpJSON("https://games.roblox.com/v1/games/" .. INTERNAL.PlaceId
+                    .. "/servers/Public?sortOrder=Asc&limit=100&excludeFullGames=true")
+                local candidates = {}
+                for _, server in ipairs(body.data or {}) do
+                    local count, capacity = tonumber(server.playing), tonumber(server.maxPlayers)
+                    if type(server.id) == "string" and server.id ~= game.JobId
+                        and count and capacity and count < capacity and count < #members then
+                        table.insert(candidates, server)
+                    end
+                end
+                table.sort(candidates, function(a, b) return tonumber(a.playing) < tonumber(b.playing) end)
+                for _, server in ipairs(candidates) do
+                    -- Recheck after HTTP / failed teleport: any roster change cancels this attempt.
+                    if env.ItemTradeStop or activePartner or fullSince ~= observedSince then return end
+                    print("[ItemTrade] Receiver moving to low population server:", server.playing)
+                    teleport(server.id, "receiver low population / " .. tostring(server.playing) .. " players")
+                    if env.ItemTradeStop then return end
+                    pause(1)
+                end
+                print("[ItemTrade] No successful receiver hop; will retry")
+            end)
+            receiverMoving = false
+            if not ok then warn("[ItemTrade] Receiver server search failed; will retry:", result) end
         end
-        local function cancelReceiverTrade(reason)
-            if cancelRequestedAt then return end
-            cancelRequestedAt = os.clock()
-            lastCancelAttemptAt = cancelRequestedAt
-            incomingOfferRejected = true -- Never advance a trade after cancellation is requested.
-            warn("[JackpotTrade] Receiver cancelling trade:", reason,
-                "partner=" .. tostring(activePartner and activePartner.Name), receiverStatus())
-            local ok, err = pcall(function() cancelSignal:Fire() end)
-            if not ok then warn("[JackpotTrade] CancelTrade failed:", err) end
-        end
-        while not env.JackpotTradeOnlyStop do
+        while not env.ItemTradeStop do
+            if fatal then error(fatal) end
             if activePartner then
-                local now = os.clock()
-                if observedTradeSequence ~= tradeSequence then
-                    observedTradeSequence = tradeSequence
-                    started, cancelRequestedAt, lastCancelAttemptAt, lastStatusLogAt = now, nil, nil, nil
-                end
-                if fatal then
-                    local reason = fatal
-                    fatal = nil
-                    cancelReceiverTrade("Trade event mismatch: " .. tostring(reason))
-                end
-                if now - (lastStatusLogAt or -math.huge) >= 15 then
-                    lastStatusLogAt = now
-                    log("Receiver status:", "partner=" .. tostring(activePartner.Name),
-                        "elapsed=" .. tostring(math.floor(now - started)) .. "s", receiverStatus())
-                end
-                -- A stalled trade is a recoverable per-trade error, not a script-wide error.
-                if not cancelRequestedAt and now - started >= CONFIG.TradeTimeout then
-                    cancelReceiverTrade("Trade timeout after " .. tostring(CONFIG.TradeTimeout) .. "s")
-                end
-                if cancelRequestedAt then
-                    -- Keep the local trade state until the server emits Ended. Do not invent
-                    -- a successful cancellation or accept another request prematurely.
-                    if now - lastCancelAttemptAt >= 10 then
-                        lastCancelAttemptAt = now
-                        warn("[JackpotTrade] Waiting for server to end cancelled trade; retrying CancelTrade:",
-                            receiverStatus())
-                        local ok, err = pcall(function() cancelSignal:Fire() end)
-                        if not ok then warn("[JackpotTrade] CancelTrade retry failed:", err) end
-                    end
-                elseif state and state.otherReady then
-                    -- Validate only after sender is ready; intermediate offer updates may be incomplete.
-                    if type(state.ownOffer) ~= "table" or next(state.ownOffer) ~= nil then
-                        cancelReceiverTrade("Receiver offer is not empty/valid")
-                    elseif type(state.otherOffer) ~= "table" then
-                        cancelReceiverTrade("Incoming offer is not a table")
-                    else
+                tradeStarted = tradeStarted or os.clock()
+                if os.clock() - tradeStarted > INTERNAL.TradeTimeout then stop("Receiver trade timeout") end
+                if state and not rejectedTrade then
+                    local valid, problem = pcall(function()
+                        assert(type(state.ownOffer) == "table" and next(state.ownOffer) == nil, "Receiver offered items")
+                        assert(type(state.otherOffer) == "table", "Invalid incoming offer")
                         local count = 0
-                        for key, entry in pairs(state.otherOffer) do
-                            local name = type(entry) == "table" and entry.name or nil
-                            local amount = type(entry) == "table" and entry.amount or nil
-                            if type(amount) ~= "number" or amount < 0
-                                or (amount > 0 and not wanted[name]) then
-                                -- Include the raw entry for diagnosing game payload changes.
-                                cancelReceiverTrade("Unexpected incoming item: key=" .. tostring(key)
-                                    .. " name=" .. tostring(name) .. " amount=" .. tostring(amount))
-                                break
-                            end
-                            if amount > 0 then count = count + 1 end
+                        for _, entry in pairs(state.otherOffer) do
+                            assert(type(entry) == "table" and (wanted[entry.name] or (U.Enabled and registry.getEntryConfig(entry.name) and registry.getEntryConfig(entry.name).kind == "Unit"))
+                                and type(entry.amount) == "number" and entry.amount > 0 and entry.amount < math.huge,
+                                "Incoming offer contains an invalid/unlisted item")
+                            count = count + 1
                         end
-                        if not cancelRequestedAt and count > 0 then advance() end
-                    end
+                        if count > 0 and state.otherReady then advanceOnce() end
+                    end)
+                    if not valid then stop(tostring(problem)) end
+                end
+                if rejectedTrade and os.clock() >= nextCancelAt then
+                    nextCancelAt = os.clock() + 3
+                    local ok, problem = pcall(function() cancel:Fire() end)
+                    warn("Waiting for cancellation confirmation:", rejectedTrade,
+                        "elapsed:", math.floor(os.clock()-rejectedAt), ok and "cancel sent" or tostring(problem))
                 end
             else
-                if started then
-                    log("Receiver trade ended:", tostring(ended))
+                tradeStarted = nil
+                if ended then print("[ItemTrade] Trade ended:", ended) ended = nil end
+            end
+            if manualHopRequested then
+                if not activePartner and os.clock() - lastAcceptedRequest >= rules.REQUEST_DURATION + 2 then
+                    receiverMoving = true
+                    local ok, problem = pcall(function()
+                        print("[ItemTrade] Searching low population servers")
+                        local body = httpJSON("https://games.roblox.com/v1/games/" .. INTERNAL.PlaceId
+                            .. "/servers/Public?sortOrder=Asc&limit=100&excludeFullGames=true")
+                        local candidates = {}
+                        for _, server in ipairs(body.data or {}) do
+                            local count, capacity = tonumber(server.playing), tonumber(server.maxPlayers)
+                            if type(server.id) == "string" and server.id ~= "" and server.id ~= game.JobId
+                                and count and capacity and count >= 0 and count < capacity then
+                                table.insert(candidates, server)
+                            end
+                        end
+                        table.sort(candidates, function(a, b) return tonumber(a.playing) < tonumber(b.playing) end)
+                        for _, server in ipairs(candidates) do
+                            if env.ItemTradeStop or activePartner then return end
+                            teleport(server.id, "manual hop / " .. tostring(server.playing) .. " players")
+                            if env.ItemTradeStop then return end
+                            pause(1)
+                        end
+                        print("[ItemTrade] No server joined; press HOP to try again")
+                    end)
+                    receiverMoving = false
+                    manualHopRequested = false
+                    if manualHopButton then manualHopButton.Text = "HOP TO LOW POPULATION SERVER" end
+                    if not ok then warn("[ItemTrade] Manual hop failed:", problem) end
                 end
-                started, cancelRequestedAt, lastCancelAttemptAt, lastStatusLogAt = nil, nil, nil, nil
-                observedTradeSequence = nil
-                fatal = nil
+            else
+                checkStuckServer()
             end
             task.wait(0.1)
         end
         return
     end
-    while not env.JackpotTradeOnlyStop do
-        -- เช็คและเซฟ marker ให้เร็วที่สุดก่อนสร้างแผนเทรด Jackpot Spin ออก
-        updateJackpotGate()
-        -- ต้องตรวจทุกครั้ง แม้ Gems/Trait Reroll ยังอยู่ (#keys จะไม่เป็นศูนย์)
-        -- หลังเทรด Jackpot หมดแล้ว จึง Autochange โดยไม่รอ Items อื่นหมด
-        if autochangeIfJackpotEmpty() then return end
-        if CONFIG.AvoidReceiverAtZeroEnabled and jackpotAmount() == 0 and receiverHere() then
-            -- ถ้าตัวรับมาเจอไอดีที่ยังไม่มี Jackpot ระหว่างฟาร์ม: งดเทรดและย้ายเซิร์ฟ
-            local ok, err = pcall(avoidReceiverWhenJackpotZero)
-            if not ok then log("AvoidReceiver error:", err) end
-            pause(CONFIG.ReceiverRetrySeconds)
+
+    while not env.ItemTradeStop do
+        if changeIfEmpty() then return end
+        if not completedTrade and not joinReady() then
+            freeReceiverSlot()
+            print("[ItemTrade] Waiting for ItemsForJoin; no completed trade recorded")
+            pause(1)
             continue
         end
-        local bag = inventory()
-        local totals = {}
-        -- รวมจำนวนแต่ละชื่อก่อน เพื่อไม่ให้หลาย inventory entries ถูกตรวจขั้นต่ำแยกกัน
-        for _, entry in pairs(bag) do
-            assert(type(entry) == "table", "Invalid inventory entry")
-            if wanted[entry.name] then
-                assert(type(entry.amount) == "number" and entry.amount >= 0,
-                    "Invalid configured item amount")
-                totals[entry.name] = (totals[entry.name] or 0) + entry.amount
-            end
+        local missing = missingTradeItems()
+        if missing ~= "" then print("Waiting for trade quantities:", missing) pause(1) continue end
+        if not campaign then
+            campaign = createCampaign()
+            if not next(campaign.remaining) then campaign = nil print("No eligible items/Units to trade") pause(1) continue end
+            saveAccountState("batch_ready")
         end
         local keys = {}
-        for key, entry in pairs(bag) do
-            local minimum = CONFIG.TradeMinimums[entry.name] or 1
-            if wanted[entry.name] and entry.amount > 0 and (totals[entry.name] or 0) >= minimum then
-                table.insert(keys, key) -- เมื่อผ่านขั้นต่ำแล้ว ส่งจำนวนทั้งหมดของไอเทมนั้น
-            end
-        end
-        table.sort(keys)
-        if #keys == 0 then
-            task.wait(1)
-            continue
-        end
-        -- ถ้าเจอ Jackpot แล้วแต่บันทึก marker ไม่สำเร็จ ห้ามเทรดออกก่อนเซฟ
-        if jackpotAmount() > 0 and not updateJackpotGate() then
-            log("Waiting for successful workspace save before trading Jackpot Spin")
-            task.wait(1)
-            continue
-        end
-        awaiting = receiverHere()
-        if not awaiting then
-            local ok, err = pcall(followReceiver)
-            if not ok then log("Follow error:", err) end
-            pause(CONFIG.ReceiverRetrySeconds)
-            continue
+        for _, key in ipairs(campaign.order) do
+            if campaign.remaining[key] then table.insert(keys,key) end
         end
         plan = {}
-        local before = {}
-        for index = 1, math.min(#keys, rules.MAX_UNIQUE_ENTRIES) do
-            local key = keys[index]
-            plan[key], before[key] = bag[key].amount, bag[key].amount
+        for i=1,math.min(#keys, rules.MAX_UNIQUE_ENTRIES) do
+            local key = keys[i]
+            plan[key] = campaign.remaining[key]
+            print("Planned:", campaign.labels[key], key, plan[key])
         end
-        ended, fatal = nil, nil
-        -- หาก Population Hop เริ่มก่อนแผนเทรดเสร็จ อย่ายิงคำขอเทรดซ้อนกับ Teleport
-        if teleportInProgress then task.wait(1); continue end
-        if CONFIG.AvoidReceiverAtZeroEnabled and jackpotAmount() == 0 then
-            task.wait(1) -- ตรวจใหม่รอบหน้า: Autochange หรือออกจากเซิร์ฟ Receiver
-            continue
+        validateBatch(plan)
+        awaiting = nil
+        for _, candidate in ipairs(Players:GetPlayers()) do
+            if receiverNames[candidate.Name:lower()] then awaiting = candidate break end
         end
-        tradeBusy = true
-        log("Requesting trade with", awaiting.Name)
-        requestSignal:Fire(awaiting)
-        if not waitFor(function() return activePartner ~= nil end, rules.REQUEST_DURATION + 2) then
-            tradeBusy = false
-            log("Trade request expired or was declined")
-            pause(math.max(CONFIG.RequestInterval, rules.REQUEST_COOLDOWN + 0.5))
-            continue
-        end
-        assert(waitFor(function() return state ~= nil or ended ~= nil end, 10) and state, "No initial trade state")
-        assert(next(state.ownOffer) == nil, "Initial offer not empty")
-        for _, key in ipairs(keys) do
-            if plan[key] then
-                assert(activePartner == awaiting and state.phase == "Offer", "Trade changed while adding items")
-                offerSignal:Fire(key, plan[key])
-                assert(waitFor(function() return state and state.ownOffer[key] == plan[key] end, 10),
-                    "Offered item was not confirmed")
-                task.wait(0.15)
+        if not awaiting then
+            print("[ItemTrade] Waiting for receivers:", table.concat(CONFIG.Receivers, ", "))
+            routeToReceiver()
+            pause(INTERNAL.ServerRetrySeconds)
+        else
+            ended = nil
+            local missingNow = missingTradeItems()
+            if missingNow ~= "" or not joinReady() then
+                print("[ItemTrade] Trade request blocked; missing:", missingNow)
+                pause(1)
+                continue
             end
-        end
-        local finishBy = os.clock() + CONFIG.TradeTimeout
-        while activePartner and not env.JackpotTradeOnlyStop do
-            assert(os.clock() < finishBy, "Trade confirmation timeout")
-            if state then
-                assert(exactOffer(state.ownOffer), "Offer changed unexpectedly")
-                assert(next(state.otherOffer) == nil, "Receiver offered an item")
-                advance()
+            print("[ItemTrade] Requesting trade with:", awaiting.Name)
+            completionEvidence = {attemptId = HS:GenerateGUID(false), receiver = awaiting.Name, offer = plan, plannedAt = os.time()}
+            saveAccountState("trade_pending")
+            request:Fire(awaiting)
+            if waitFor(function() return activePartner ~= nil end, rules.REQUEST_DURATION + 2) then
+                assert(waitFor(function() return state ~= nil or ended ~= nil end, 10) and state, "No initial trade state")
+                assert(next(state.ownOffer) == nil, "Initial offer not empty")
+                validateBatch(plan)
+                for _, key in ipairs(keys) do
+                    if plan[key] then
+                        assert(activePartner == awaiting and state.phase == "Offer", "Trade changed while adding items")
+                        change:Fire(key, plan[key])
+                        print("[ItemTrade] Offer sent:", key, plan[key])
+                        assert(waitFor(function()
+                            return state and state.ownOffer[key] == plan[key]
+                        end, 10), "Item offer not confirmed; stopped")
+                        task.wait(0.15)
+                    end
+                end
+                local finishBy = os.clock() + INTERNAL.TradeTimeout
+                while activePartner and not env.ItemTradeStop do
+                    if fatal then error(fatal) end
+                    assert(os.clock() < finishBy, "Trade confirmation timeout")
+                    if state then
+                        assert(exactOffer(state.ownOffer), "Offer changed; cancelling")
+                        assert(next(state.otherOffer) == nil, "Receiver offered items; cancelling")
+                        if state.phase == "Offer" or state.phase == "Confirm" then validateBatch(plan) end
+                        advanceOnce()
+                    end
+                    task.wait(0.1)
+                end
+                if env.ItemTradeStop then return end
+                assert(not fatal, fatal)
+                if ended ~= "Completed" then
+                    warn("Trade cancelled; retry later:", ended)
+                    pause(INTERNAL.RequestInterval)
+                    continue
+                end
+                assert(not fatal, fatal)
+                assert(accountState.status == "batch_ready" or accountState.status == "awaiting_action", "Completed batch evidence not saved")
+                -- ไม่ใช้ยอด Gems/Trait ที่อาจได้เพิ่มมาขัดขวางการบันทึก Completed
+                -- ยึด Completed และแผน ไม่ยึดของที่ได้เพิ่มหลังเทรด
+                pause(1)
+                print("[ItemTrade] Batch completed")
+                if changeIfEmpty() then return end
+            else
+                saveAccountState("batch_ready")
+                warn("[ItemTrade] No trade started: request may be declined, expired, or rejected by the server")
             end
-            task.wait(0.1)
+            task.wait(math.max(INTERNAL.RequestInterval, rules.REQUEST_COOLDOWN + 0.5))
         end
-        if env.JackpotTradeOnlyStop then return end
-        if ended ~= "Completed" then
-            -- Receiver may cancel a stalled/invalid trade. Retry with a freshly read inventory
-            -- instead of terminating the sender's entire script.
-            tradeBusy = false
-            warn("[JackpotTrade] Trade ended without completion:", tostring(ended), "; retrying after cooldown")
-            pause(math.max(CONFIG.RequestInterval, rules.REQUEST_COOLDOWN + 0.5))
-            continue
-        end
-        assert(waitFor(function()
-            local current = inventory()
-            for key, amount in pairs(before) do
-                if current[key] and current[key].amount > amount - plan[key] then return false end
-            end
-            return true
-        end, 15), "Inventory transfer not confirmed")
-        tradeBusy = false
-        log("Trade completed")
-        pause(math.max(CONFIG.RequestInterval, rules.REQUEST_COOLDOWN + 0.5))
     end
 end
+
 local ok, err = pcall(main)
-hopThreadAlive = false
-if activePartner and cancelSignal then pcall(function() cancelSignal:Fire() end) end
-if tradeConnection then tradeConnection:Disconnect() end
-if teleportConnection then teleportConnection:Disconnect() end
-env.JackpotTradeOnlyRunning = false
-if not ok then warn("[JackpotTrade]", err) else log("Stopped") end
+if activePartner and cancel then pcall(function() cancel:Fire() end) end
+if connection then connection:Disconnect() end
+for _, listener in ipairs(rosterConnections) do listener:Disconnect() end
+env.ItemTradeRunning = false
+if not ok then
+    warn("[ItemTrade]", err)
+else
+    print("[ItemTrade] Stopped / operation finished")
+end
