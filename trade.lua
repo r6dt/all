@@ -234,7 +234,7 @@ local uiOK, uiError = pcall(function()
     end)
     local panel = Instance.new("Frame")
     panel.Position = UDim2.fromOffset(10, 10)
-    panel.Size = UDim2.new(0, 320, 0, isReceiver and 170 or 140)
+    panel.Size = UDim2.new(0, 320, 0, isReceiver and 205 or 165)
     panel.BackgroundColor3 = Color3.fromRGB(10, 15, 25)
     panel.BackgroundTransparency = 0.45
     panel.BorderSizePixel = 0
@@ -278,7 +278,7 @@ local uiOK, uiError = pcall(function()
     statusDot.BorderSizePixel = 0
     statusDot.Parent = panel
     local button = Instance.new("TextButton")
-    button.Position = UDim2.fromOffset(14, 112)
+    button.Position = UDim2.fromOffset(14, 170)
     button.Size = UDim2.new(1, -28, 0, 24)
     button.BackgroundColor3 = Color3.fromRGB(160, 50, 65)
     button.BackgroundTransparency = 0.25
@@ -297,7 +297,7 @@ local uiOK, uiError = pcall(function()
     end)
     if isReceiver then
         manualHopButton = Instance.new("TextButton")
-        manualHopButton.Position = UDim2.fromOffset(14, 82)
+        manualHopButton.Position = UDim2.fromOffset(14, 140)
         manualHopButton.Size = UDim2.new(1, -28, 0, 24)
         manualHopButton.BackgroundColor3 = Color3.fromRGB(45,120,190)
         manualHopButton.BackgroundTransparency = 0.25
