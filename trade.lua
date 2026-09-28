@@ -210,11 +210,16 @@ local uiOK, uiError = pcall(function()
     end
     local input = game:GetService("UserInputService")
     local hotkey = input.InputBegan:Connect(function(key)
-        if key.KeyCode == Enum.KeyCode.RightControl and not input:GetFocusedTextBox() then
-            uiVisible = not uiVisible
-            gui.Enabled = uiVisible
-            if uiVisible then bringToFront() end
+    if (key.KeyCode == Enum.KeyCode.LeftAlt or key.KeyCode == Enum.KeyCode.RightAlt)
+        and not input:GetFocusedTextBox() then
+
+        uiVisible = not uiVisible
+        gui.Enabled = uiVisible
+
+        if uiVisible then 
+            bringToFront() 
         end
+    end
     end)
     local siblingAdded = uiRoot.ChildAdded:Connect(function(child)
         if child ~= gui and child:IsA("ScreenGui") then task.defer(bringToFront) end
