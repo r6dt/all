@@ -249,15 +249,15 @@ local uiOK, uiError = pcall(function()
     border.Color = Color3.fromRGB(58, 78, 104)
     border.Parent = panel
     local function label(y, height, size, text)
-        local item = Instance.new("TextLabel")
-        item.BackgroundTransparency = 1
-        item.Position = UDim2.fromOffset(14, y)
-        item.Size = UDim2.new(1, -28, 0, height)
-        item.Font = Enum.Font.GothamBold
-        item.TextSize = size
-        item.TextColor3 = Color3.fromRGB(240, 245, 255)
-        item.TextXAlignment = Enum.TextXAlignment.Left
-        item.TextYAlignment = Enum.TextYAlignment.Center
+    local item = Instance.new("TextLabel")
+    item.BackgroundTransparency = 1
+    item.Position = UDim2.fromOffset(14, y)
+    item.Size = UDim2.new(1, -28, 0, height)
+    item.Font = Enum.Font.GothamBold
+    item.TextSize = math.clamp(size * 0.75, 9, 14)
+    item.TextColor3 = Color3.fromRGB(240, 245, 255)
+    item.TextXAlignment = Enum.TextXAlignment.Left
+    item.TextYAlignment = Enum.TextYAlignment.Center
         item.TextWrapped = true
         item.Text = text
         item.Parent = panel
@@ -292,8 +292,8 @@ local uiOK, uiError = pcall(function()
     end)
     if isReceiver then
         manualHopButton = Instance.new("TextButton")
-        manualHopButton.Position = UDim2.fromOffset(14, 204)
-        manualHopButton.Size = UDim2.new(1, -28, 0, 28)
+        manualHopButton.Position = UDim2.fromOffset(12, 140)
+        manualHopButton.Size = UDim2.new(1, -24, 0, 22)
         manualHopButton.BackgroundColor3 = Color3.fromRGB(40, 85, 125)
         manualHopButton.TextColor3 = Color3.new(1, 1, 1)
         manualHopButton.Font = Enum.Font.GothamBold
