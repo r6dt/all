@@ -233,8 +233,8 @@ local uiOK, uiError = pcall(function()
         end
     end)
     local panel = Instance.new("Frame")
-    panel.Position = UDim2.fromOffset(12, 12)
-    panel.Size = UDim2.new(0.92, 0, 0, isReceiver and 244 or 204)
+    panel.Position = UDim2.fromOffset(10, 10)
+    panel.Size = UDim2.new(0, 320, 0, isReceiver and 170 or 140)
     panel.BackgroundColor3 = Color3.fromRGB(16, 21, 32)
     panel.BackgroundTransparency = 0
     panel.BorderSizePixel = 0
