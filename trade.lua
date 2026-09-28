@@ -12,7 +12,7 @@ local CONFIG = {
         Mode = "any", -- any = ผ่านอย่างน้อยหนึ่งเงื่อนไข | all = ผ่านทุกเงื่อนไขที่เปิด
         Items = {
             ["Gems"] = 1000,
-            ["Trait Reroll"] = 300
+            ["Trait Reroll"] = 200,
             -- ["Lucky Spin"] = 5
         },
         Units = {
@@ -24,12 +24,14 @@ local CONFIG = {
     },
     -- ===============================================================================================================
     Trade = {
-        KeepEquippedGear = true, -- ไม่เทรดเกียร์ที่กำลังสวมไว้ 1 ชิ้น ส่งส่วนที่เหลือได้ เช่น มี 10ชิ้น สวมอยู่ 1 ชิ้น จะเทรดได้ 9 ชิ้น
+        KeepEquippedGear = false, -- ไม่เทรดเกียร์ที่กำลังสวมไว้ 1 ชิ้น ส่งส่วนที่เหลือได้ เช่น มี 10ชิ้น สวมอยู่ 1 ชิ้น จะเทรดได้ 9 ชิ้น
         Items = {
             ["Gems"] = "all",
             ["Trait Reroll"] = "all",
             ["Lucky Spin"] = "all",
-			["Angel's Halo"] = "all",
+            ["Trait Reroll"] = "all",
+            ["Lucky Spin"] = "all",
+            ["Angel's Halo"] = "all",
             ["Sakuna's Sash"] = "all",
             ["Enol's Drums"] = "all",
             ["Obita's Mask"] = "all",
@@ -42,7 +44,8 @@ local CONFIG = {
             MaxIncome = 0,
             Amount = "all", -- หรือจำนวนตัวที่ต้องการส่งให้ครบ
             SendOrder = "lowest", -- lowest = รายได้น้อยก่อน | highest = มากก่อน
-            SkipLocked = true, SkipSlotted = true,
+            SkipLocked = true,
+            SkipSlotted = true,
             KeepPerName = 1, -- เก็บรายได้สูงสุดของแต่ละชื่อไว้จำนวนนี้
         },
     },
@@ -157,19 +160,83 @@ local uiOK, uiError = pcall(function()
     end
     local playerGui = player:WaitForChild("PlayerGui", 15)
     assert(playerGui, "PlayerGui unavailable")
+    -- ล้างเฉพาะ UI ของสคริปต์นี้จากการรันครั้งก่อน
+    if typeof(env.FlexibleTradeStatusGui) == "Instance" then
+        pcall(function() env.FlexibleTradeStatusGui:Destroy() end)
+    end
     local old = playerGui:FindFirstChild("JackpotTradeStatus")
     if old then old:Destroy() end
     local gui = Instance.new("ScreenGui")
+    local uiVisible = false -- เริ่มซ่อน UI; กด Ctrl ขวาเพื่อสลับเปิด/ปิด
+    gui.Enabled = uiVisible
     gui.Name = "JackpotTradeStatus"
     gui.ResetOnSpawn = false
-    gui.DisplayOrder = 110
-    gui.Parent = playerGui
-    gui.Destroying:Connect(function() uiAlive = false end)
+    gui.DisplayOrder = 2147483647 -- ลำดับสูงสุดของ ScreenGui ให้แผงสถานะอยู่ด้านหน้า
+    gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    gui.IgnoreGuiInset = true -- วางแผงจากขอบหน้าจอโดยตรง
+    -- เลือกชั้นของ executor ก่อน แล้ว fallback เมื่อไม่รองรับ/ไม่มีสิทธิ์
+    local uiRoot
+    local candidates = {}
+    local hiddenUI = env.gethui or gethui
+    if type(hiddenUI) == "function" then
+        local ok, root = pcall(hiddenUI)
+        if ok and typeof(root) == "Instance" then table.insert(candidates, root) end
+    end
+    table.insert(candidates, game:GetService("CoreGui"))
+    table.insert(candidates, playerGui)
+    for _, root in ipairs(candidates) do
+        local ok = pcall(function() gui.Parent = root end)
+        if ok and gui.Parent == root then uiRoot = root break end
+    end
+    assert(uiRoot, "Cannot attach trade UI")
+    env.FlexibleTradeStatusGui = gui
+    local frontBusy = false
+    local function bringToFront()
+        if not uiAlive or not uiVisible or frontBusy then return end
+        frontBusy = true
+        local ok, err = pcall(function()
+            gui.Enabled = true
+            gui.DisplayOrder = 2147483647
+            -- แทรก UI ของเราใหม่เพื่ออยู่ท้ายลำดับเมื่อ ScreenGui อื่นมี DisplayOrder เท่ากัน
+            gui.Parent = nil
+            gui.Parent = uiRoot
+        end)
+        if not ok then
+            pcall(function() gui.Parent = playerGui end)
+            uiRoot = playerGui
+            nativeWarn("[ItemTrade UI] Front refresh:", err)
+        end
+        frontBusy = false
+    end
+    local input = game:GetService("UserInputService")
+    local hotkey = input.InputBegan:Connect(function(key)
+        if key.KeyCode == Enum.KeyCode.RightControl and not input:GetFocusedTextBox() then
+            uiVisible = not uiVisible
+            gui.Enabled = uiVisible
+            if uiVisible then bringToFront() end
+        end
+    end)
+    local siblingAdded = uiRoot.ChildAdded:Connect(function(child)
+        if child ~= gui and child:IsA("ScreenGui") then task.defer(bringToFront) end
+    end)
+    gui.Destroying:Connect(function()
+        uiAlive = false
+        hotkey:Disconnect()
+        siblingAdded:Disconnect()
+        if env.FlexibleTradeStatusGui == gui then env.FlexibleTradeStatusGui = nil end
+    end)
+    task.spawn(function()
+        while uiAlive do
+            task.wait(3)
+            -- ไม่ย้าย parent ขณะกดปุ่มบน UI เพื่อไม่ขัดจังหวะ STOP/HOP
+            if uiAlive and not input:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then bringToFront() end
+        end
+    end)
     local panel = Instance.new("Frame")
     panel.Position = UDim2.fromOffset(12, 12)
     panel.Size = UDim2.new(0.92, 0, 0, isReceiver and 244 or 204)
     panel.BackgroundColor3 = Color3.fromRGB(16, 21, 32)
-    panel.BackgroundTransparency = 0.06
+    panel.BackgroundTransparency = 0
     panel.BorderSizePixel = 0
     panel.Parent = gui
     local limit = Instance.new("UISizeConstraint")
@@ -307,13 +374,28 @@ local function main()
     local registry = module("Framework.Features.Inventory.EntryRegistry")
     local function positive(n) return type(n) == "number" and n > 0 and n < math.huge and n % 1 == 0 end
     assert(CONFIG.JoinConditions.Mode == "all" or CONFIG.JoinConditions.Mode == "any", "Invalid ModeItemsForJoin")
+    local tradeItems = {} -- รายการที่ใช้จริงหลังกรอง ไม่แก้ CONFIG ของผู้ใช้
+    local skippedItems = {}
     for name, count in pairs(CONFIG.Trade.Items) do
-        assert(type(name) == "string" and (count == "all" or positive(count)), "Invalid trade config")
-        local entry = registry.getEntryConfig(name)
-        assert(entry and entry.kind ~= "Unit" and not table.find(rules.UNTRADEABLE_ENTRIES, name), "Untradeable item: " .. name)
-        wanted[name] = true
+        local reason
+        if type(name) ~= "string" or name == "" then
+            reason = "invalid item name"
+        elseif count ~= "all" and not positive(count) then
+            reason = "quantity must be a positive integer or all"
+        else
+            local entry = registry.getEntryConfig(name)
+            if not entry then reason = "name not found in game item registry"
+            elseif entry.kind == "Unit" then reason = "Unit belongs in Trade.Units"
+            elseif table.find(rules.UNTRADEABLE_ENTRIES, name) then reason = "blocked by game trade rules"
+            end
+        end
+        if reason then
+            skippedItems[#skippedItems+1] = tostring(name)
+            warn("[Config] Skipped:", tostring(name), "Reason:", reason)
+        else
+            tradeItems[name], wanted[name] = count, true
+        end
     end
-    assert(next(wanted) or CONFIG.Trade.Units.Enabled, "Nothing enabled for trade")
     local joinWanted = {}
     for name, count in pairs(CONFIG.JoinConditions.Items) do
         assert(type(name) == "string" and positive(count), "Invalid join config")
@@ -433,7 +515,7 @@ local function main()
         if campaign then return "" end
         local amounts = availableItems()
         local missing = {}
-        for name, count in pairs(CONFIG.Trade.Items) do
+        for name, count in pairs(tradeItems) do
             if type(count) == "number" and amounts[name] < count then table.insert(missing, name .. " " .. amounts[name] .. "/" .. count) end
         end
         if U.Enabled and type(U.Amount) == "number" and #eligibleUnits(tradeMin, tradeMax, true) < U.Amount then
@@ -445,7 +527,7 @@ local function main()
         local bag, amounts = data.Inventory(), availableItems()
         local result = {remaining={}, labels={}, order={}}
         local remaining = {}
-        for name, count in pairs(CONFIG.Trade.Items) do remaining[name] = count == "all" and amounts[name] or count end
+        for name, count in pairs(tradeItems) do remaining[name] = count == "all" and amounts[name] or count end
         local keys = {}
         for key in pairs(bag) do table.insert(keys,key) end
         table.sort(keys, function(a,b) return tostring(a)<tostring(b) end)
@@ -490,7 +572,7 @@ local function main()
             if balanceLabel then
                 local parts = {}
                 if ok then
-                    for name in pairs(CONFIG.Trade.Items) do
+                    for name in pairs(tradeItems) do
                         table.insert(parts, name .. ": " .. tostring(amounts[name]))
                     end
                 end
@@ -498,6 +580,7 @@ local function main()
                     local good, units = pcall(eligibleUnits, tradeMin, tradeMax, true)
                     table.insert(parts, good and ("Eligible Units: " .. #units) or "Units: unavailable")
                 end
+                if #skippedItems > 0 then table.insert(parts, "Skipped: " .. #skippedItems .. " (see log)") end
                 balanceLabel.Text = ok and table.concat(parts, " | ") or "Items: waiting for data"
             end
             if detailLabel then
@@ -829,6 +912,11 @@ local function main()
         end
     end
     if not receiverMode then
+        while not next(tradeItems) and not U.Enabled and not campaign and not completedTrade and not env.ItemTradeStop do
+            print("No valid trade items; waiting - no join/hop/autochange. Correct CONFIG and rerun.")
+            pause(5)
+        end
+        if env.ItemTradeStop then return end
         local observeUntil = os.clock() + INTERNAL.ObserveSeconds
         repeat
             print("[ItemTrade] Observing inventory. Configured item total:", (configuredItemAmount()))
@@ -853,11 +941,39 @@ local function main()
     assert(tradingEnabled:Get() == true, "Trading unavailable or server property not loaded")
     assert(player.AccountAge >= rules.MIN_ACCOUNT_AGE, "Account too new to trade")
     assert(data.Rolls() >= rules.MIN_ROLLS, "Not enough rolls to unlock trading")
-    local request = comm:GetSignal("RequestTrade")
-    local respond = comm:GetSignal("RespondToRequest")
-    local change = comm:GetSignal("ChangeOffer")
-    local advance = comm:GetSignal("AdvanceTrade")
-    cancel = comm:GetSignal("CancelTrade")
+    -- ใช้ RemoteEvent โดยตรง ตาม Network.ClientRemoteSignal แบบไม่มี middleware
+    local function loadTradeSignal(name)
+        local started, nextNotice = os.clock(), 0
+        print("Finding direct trade remote:", name)
+        while not env.ItemTradeStop do
+            local root = RS:FindFirstChild("Network")
+            local service = root and root:FindFirstChild("TradeService")
+            local folder = service and service:FindFirstChild("RE")
+            local remote = folder and folder:FindFirstChild(name)
+            if remote then
+                assert(remote:IsA("RemoteEvent"), "Unexpected trade remote class: " .. name)
+                print("Direct trade remote ready:", name)
+                return {
+                    Fire = function(_, ...) remote:FireServer(...) end,
+                    Connect = function(_, callback) return remote.OnClientEvent:Connect(callback) end,
+                }
+            end
+            local elapsed = os.clock() - started
+            assert(elapsed < 20, "Missing Network.TradeService.RE." .. name .. "; no trade request sent")
+            if elapsed >= nextNotice then
+                print("Waiting for direct trade remote:", name, math.floor(elapsed), "seconds")
+                nextNotice = elapsed + 5
+            end
+            task.wait(0.1)
+        end
+        error("Stopped while finding trade remote: " .. name)
+    end
+    local request = loadTradeSignal("RequestTrade")
+    local respond = loadTradeSignal("RespondToRequest")
+    local change = loadTradeSignal("ChangeOffer")
+    local advance = loadTradeSignal("AdvanceTrade")
+    cancel = loadTradeSignal("CancelTrade")
+    local tradeEvent = loadTradeSignal("TradeEvent")
     local state, ended, fatal, plan, awaiting
     local rejectedTrade, nextCancelAt, rejectedAt
     local blockedSenders = {}
@@ -878,7 +994,7 @@ local function main()
         fatal = reason
         if activePartner then cancel:Fire() end
     end
-    connection = comm:GetSignal("TradeEvent"):Connect(function(event, payload)
+    local function onTradeEvent(event, payload)
         print("[ItemTrade] Event:", event, "Phase:", payload and payload.phase,
             "Reason:", payload and payload.reason)
         if event == "RequestReceived" and receiverMode then
@@ -947,7 +1063,36 @@ local function main()
             activePartner, state = nil, nil
             rejectedTrade, rejectedAt, nextCancelAt = nil, nil, nil
         end
+    end
+    print("Binding direct TradeEvent listener")
+    local listenerDone, listenerAbandoned, listenerError = false, false, nil
+    local listenerStarted = os.clock()
+    task.spawn(function()
+        local ok, result = pcall(function()
+            return tradeEvent:Connect(function(...)
+                if not listenerAbandoned then onTradeEvent(...) end
+            end)
+        end)
+        if ok then
+            if listenerAbandoned then result:Disconnect() else connection = result end
+        else listenerError = result end
+        listenerDone = true
     end)
+    local nextListenerNotice = 5
+    while not listenerDone do
+        local elapsed = os.clock() - listenerStarted
+        if env.ItemTradeStop or elapsed >= 20 then
+            listenerAbandoned = true
+            error("TradeEvent listener not connected; no trade request sent. Stop=" .. tostring(env.ItemTradeStop))
+        end
+        if elapsed >= nextListenerNotice then
+            print("Binding TradeEvent listener:", math.floor(elapsed), "seconds")
+            nextListenerNotice = elapsed + 5
+        end
+        task.wait(0.1)
+    end
+    assert(connection, "TradeEvent listener failed: " .. tostring(listenerError))
+    print("TradeEvent listener ready")
     local function waitFor(predicate, seconds)
         local limit = os.clock() + seconds
         repeat
@@ -985,7 +1130,7 @@ local function main()
     print("[ItemTrade] Mode:", receiverMode and "RECEIVER (automatic acceptance)" or "SENDER")
     if receiverMode then
         if data.TradeRequestsEnabled() ~= true then
-            comm:GetSignal("SetTradeRequestsEnabled"):Fire(true)
+            loadTradeSignal("SetTradeRequestsEnabled"):Fire(true)
             assert(waitFor(function() return data.TradeRequestsEnabled() == true end, 10),
                 "Could not enable incoming trade requests")
         end
