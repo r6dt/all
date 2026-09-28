@@ -12,7 +12,7 @@ local CONFIG = {
         Mode = "any", -- any = ผ่านอย่างน้อยหนึ่งเงื่อนไข | all = ผ่านทุกเงื่อนไขที่เปิด
         Items = {
             ["Gems"] = 1000,
-            ["Trait Reroll"] = 200,
+            ["Trait Reroll"] = 500,
             -- ["Lucky Spin"] = 5
         },
         Units = {
