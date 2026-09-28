@@ -167,7 +167,7 @@ local uiOK, uiError = pcall(function()
     local old = playerGui:FindFirstChild("JackpotTradeStatus")
     if old then old:Destroy() end
     local gui = Instance.new("ScreenGui")
-    local uiVisible = false -- เริ่มเปิด UI; กด Alt เพื่อสลับเปิด/ปิด
+    local uiVisible = false
     gui.Enabled = uiVisible
     gui.Name = "JackpotTradeStatus"
     gui.ResetOnSpawn = false
